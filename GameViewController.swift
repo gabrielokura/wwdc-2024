@@ -1,0 +1,182 @@
+//
+//  GameViewController.swift
+//  TowerDefense
+//
+//  Created by Gabriel Motelevicz Okura on 25/07/23.
+//
+
+import UIKit
+import SceneKit
+import Combine
+import SwiftUI
+
+struct GameLevelViewRepresentable: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> some UIViewController {
+        return GameSceneController()
+    }
+    
+    func updateUIViewController(_ uiViewController: UIViewControllerType, context: Context) {}
+}
+
+
+class GameSceneController: UIViewController {
+    var sceneView: SCNView!
+    
+    private var initialCameraPosition: SCNVector3!
+    private var initialCameraRotation: SCNVector4!
+    
+    var cameraNode: SCNNode!
+    var scene: SCNScene!
+    
+    var manager: Manager = Manager.instance
+    var cancellableBag = Set<AnyCancellable>()
+    
+    var terrain: Terrain!
+    
+    override func loadView() {
+        super.loadView()
+        
+        let view = SCNView()
+        self.view = view
+        
+        self.sceneView = view
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        let paths = Bundle.main.paths(forResourcesOfType: nil, inDirectory: nil)
+        print("paths \(paths)")
+        
+        guard let scene = SCNScene(named: "GameLevel.scn") else {
+            print("Não achou GameLevel.scn")
+            return
+        }
+        
+        self.sceneView.scene = scene
+        self.scene = scene
+        
+        self.sceneView.showsStatistics = true
+//        self.sceneView.debugOptions = [.showConstraints, .showSkeletons, .showPhysicsShapes]
+        
+        self.setupCamera()
+        self.setupBackground()
+        self.subscribeToFixedCameraEvents()
+        self.subscribeToActions()
+        self.setupTerrain()
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
+        self.sceneView.addGestureRecognizer(tapGesture)
+        self.scene.physicsWorld.contactDelegate = self
+    }
+    
+    private func subscribeToFixedCameraEvents() {
+        manager.$isCameraFixed.sink { value in
+            self.sceneView.allowsCameraControl = !value
+        }.store(in: &cancellableBag)
+    }
+    
+    private func subscribeToActions() {
+        manager.actionStream.sink { action in
+            switch action {
+            case .returnCamera:
+                self.returnCameraToInitialPosition()
+            case .startEditing:
+                self.terrain.startEditing()
+            case .finishEditing:
+                self.terrain.finishEditing()
+            case .start:
+                self.setupAliens()
+            }
+        }.store(in: &cancellableBag)
+    }
+    
+    private func setupCamera() {
+        cameraNode = self.scene.rootNode.childNode(withName: "camera", recursively: false)
+        
+        initialCameraPosition = cameraNode!.position
+        initialCameraRotation = cameraNode!.rotation
+    }
+    
+    private func setupBackground() {
+        let skyboxImages = [UIImage(named: "space_rt"),
+                            UIImage(named: "space_lf"),
+                            UIImage(named: "space_up"),
+                            UIImage(named: "space_dn"),
+                            UIImage(named: "space_ft"),
+                            UIImage(named: "space_bk")]
+        
+        self.scene.background.contents = skyboxImages
+    }
+    
+    func returnCameraToInitialPosition() {
+        cameraNode.position = initialCameraPosition
+        cameraNode.rotation = initialCameraRotation
+        self.sceneView.pointOfView = cameraNode
+    }
+    
+    func setupAliens() {
+        let alien = Alien(.purple, in: self.scene.rootNode)!
+        sceneView.scene?.rootNode.addChildNode(alien)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: { // remove/replace ship after half a second to visualize collision
+            self.setupAliens()
+        })
+    }
+    
+    func setupTerrain() {
+        terrain = Terrain(in: self.scene.rootNode)
+    }
+    
+    @objc func handleTap(_ gestureRecognize: UIGestureRecognizer) {
+        // check what nodes are tapped
+        let p = gestureRecognize.location(in: sceneView)
+        let hitResults = sceneView.hitTest(p, options: [:])
+        // check that we clicked on at least one object
+        if hitResults.count > 0 {
+            // retrieved the first clicked object
+            let result: SCNHitTestResult = hitResults[0]
+            let name = result.node.parent?.name
+            
+            if (name != nil && name!.contains("editable")) {
+                terrain.tapOnTerrain(node: result.node)
+                return
+            }
+        }
+    }
+}
+
+extension GameSceneController: SCNPhysicsContactDelegate {
+    func physicsWorld(_ world: SCNPhysicsWorld, didBegin contact: SCNPhysicsContact) {
+        let alien = contact.nodeA is Alien ? contact.nodeA as! Alien : contact.nodeB as! Alien
+        
+        if contact.nodeA is Bullet || contact.nodeB is Bullet {
+            let bullet = contact.nodeA is Bullet ? contact.nodeA as! Bullet : contact.nodeB as! Bullet
+            bullet.removeFromParentNode()
+            alien.takeDamage(40)
+            return
+        }
+        
+        if contact.nodeA is Tower || contact.nodeB is Tower {
+            let tower = contact.nodeA is Tower ? contact.nodeA as! Tower : contact.nodeB as! Tower
+            tower.lockCannon(on: alien)
+            return
+        }
+    }
+    
+    func physicsWorld(_ world: SCNPhysicsWorld, didEnd contact: SCNPhysicsContact) {
+        if contact.nodeA is Tower || contact.nodeB is Tower {
+            let tower = contact.nodeA is Tower ? contact.nodeA as! Tower : contact.nodeB as! Tower
+            tower.unlockCannon()
+            return
+        }
+    }
+    
+    func physicsWorld(_ world: SCNPhysicsWorld, didUpdate contact: SCNPhysicsContact) {
+        if contact.nodeA is Tower || contact.nodeB is Tower {
+            let tower = contact.nodeA is Tower ? contact.nodeA as! Tower : contact.nodeB as! Tower
+            tower.aimCannon()
+            tower.startFire()
+        }
+    }
+}

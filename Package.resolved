@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "neat-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/troydeville/NEAT-swift",
+      "state" : {
+        "branch" : "master",
+        "revision" : "043e366b60733b88e1cb532ef3cf777b33cd3b15"
+      }
+    }
+  ],
+  "version" : 2
+}
