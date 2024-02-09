@@ -31,7 +31,11 @@ class GameSceneController: UIViewController {
     var manager: Manager = Manager.instance
     var cancellableBag = Set<AnyCancellable>()
     
+    var neuralNetworkManager: NeuralNetworkManager?
+    
     var terrain: Terrain!
+    
+    var isPlaying = false
     
     override func loadView() {
         super.loadView()
@@ -45,9 +49,6 @@ class GameSceneController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let paths = Bundle.main.paths(forResourcesOfType: nil, inDirectory: nil)
-        print("paths \(paths)")
-        
         guard let scene = SCNScene(named: "GameLevel.scn") else {
             print("Não achou GameLevel.scn")
             return
@@ -57,17 +58,20 @@ class GameSceneController: UIViewController {
         self.scene = scene
         
         self.sceneView.showsStatistics = true
-//        self.sceneView.debugOptions = [.showConstraints, .showSkeletons, .showPhysicsShapes]
+        self.sceneView.debugOptions = [.showConstraints, .showSkeletons, .showPhysicsShapes]
         
         self.setupCamera()
         self.setupBackground()
         self.subscribeToFixedCameraEvents()
         self.subscribeToActions()
         self.setupTerrain()
+        self.setupAliensPopulation()
+        
         
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         self.sceneView.addGestureRecognizer(tapGesture)
         self.scene.physicsWorld.contactDelegate = self
+        self.sceneView.delegate = self
     }
     
     private func subscribeToFixedCameraEvents() {
@@ -86,7 +90,7 @@ class GameSceneController: UIViewController {
             case .finishEditing:
                 self.terrain.finishEditing()
             case .start:
-                self.setupAliens()
+                self.isPlaying = true
             }
         }.store(in: &cancellableBag)
     }
@@ -115,17 +119,20 @@ class GameSceneController: UIViewController {
         self.sceneView.pointOfView = cameraNode
     }
     
-    func setupAliens() {
-        let alien = Alien(.purple, in: self.scene.rootNode)!
-        sceneView.scene?.rootNode.addChildNode(alien)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: { // remove/replace ship after half a second to visualize collision
-            self.setupAliens()
-        })
-    }
-    
     func setupTerrain() {
         terrain = Terrain(in: self.scene.rootNode)
+    }
+    
+    func setupAliensPopulation() {
+        let alien = Alien(.purple, in: self.scene.rootNode, walls: terrain.walls)!
+        sceneView.scene?.rootNode.addChildNode(alien)
+        
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: { // remove/replace ship after half a second to visualize collision
+//            self.setupAliens()
+//        })
+        
+        self.neuralNetworkManager = NeuralNetworkManager(population: 1)
+        self.neuralNetworkManager?.setupAliens([alien])
     }
     
     @objc func handleTap(_ gestureRecognize: UIGestureRecognizer) {
@@ -148,12 +155,13 @@ class GameSceneController: UIViewController {
 
 extension GameSceneController: SCNPhysicsContactDelegate {
     func physicsWorld(_ world: SCNPhysicsWorld, didBegin contact: SCNPhysicsContact) {
+        
         let alien = contact.nodeA is Alien ? contact.nodeA as! Alien : contact.nodeB as! Alien
         
         if contact.nodeA is Bullet || contact.nodeB is Bullet {
             let bullet = contact.nodeA is Bullet ? contact.nodeA as! Bullet : contact.nodeB as! Bullet
             bullet.removeFromParentNode()
-            alien.takeDamage(40)
+            alien.onCollision(withBullet: true, contactPoint: contact.contactPoint)
             return
         }
         
@@ -162,9 +170,13 @@ extension GameSceneController: SCNPhysicsContactDelegate {
             tower.lockCannon(on: alien)
             return
         }
+        
+        alien.onCollision(withBullet: false, contactPoint: contact.contactPoint)
     }
     
     func physicsWorld(_ world: SCNPhysicsWorld, didEnd contact: SCNPhysicsContact) {
+        let alien = contact.nodeA is Alien ? contact.nodeA as! Alien : contact.nodeB as! Alien
+        
         if contact.nodeA is Tower || contact.nodeB is Tower {
             let tower = contact.nodeA is Tower ? contact.nodeA as! Tower : contact.nodeB as! Tower
             tower.unlockCannon()
@@ -178,5 +190,20 @@ extension GameSceneController: SCNPhysicsContactDelegate {
             tower.aimCannon()
             tower.startFire()
         }
+    }
+}
+
+extension GameSceneController: SCNSceneRendererDelegate {
+    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+        if !isPlaying {
+            return
+        }
+        
+        if self.neuralNetworkManager == nil {
+            print("Neural network nil")
+            return
+        }
+        
+        self.neuralNetworkManager?.train()
     }
 }

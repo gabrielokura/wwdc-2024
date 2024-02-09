@@ -17,20 +17,32 @@ class Terrain {
     private let nonEditableObjectName = "tile"
     private let clickableName = "clickable"
     
+    var walls: [SCNNode] = []
+    
     init(in sceneNode: SCNNode!) {
         self.sceneNode = sceneNode
         
         self.nodes = sceneNode.childNodes(passingTest: { (node, stop) -> Bool in
             return node.name == editableObjectName
         })
-        
-        print(self.nodes.count)
-//        setup()
+
+        setupNodesPhysicsBody()
     }
     
-    private func setup() {
-        for i in 0..<nodes.count {
-            nodes[i].name! += "_on\(i)"
+    private func setupNodesPhysicsBody() {
+        _ = sceneNode.childNodes.map { node in
+            let name = node.name ?? ""
+            
+            //TODO: improve!! New maps feature
+            if name == "wall"{
+                node.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(node: node))
+                node.physicsBody?.collisionBitMask = CollisionCategory.alien.rawValue
+                node.physicsBody?.contactTestBitMask = CollisionCategory.alien.rawValue | CollisionCategory.sensor.rawValue
+                node.physicsBody?.categoryBitMask = CollisionCategory.terrain.rawValue
+                node.opacity = 0
+                
+                walls.append(node)
+            }
         }
     }
     
