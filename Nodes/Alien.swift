@@ -127,6 +127,18 @@ class Alien: SCNNode, Identifiable {
         lifeNode.scale.x = healthScale
     }
     
+    func setupSensorNode() {
+        let geometry = SCNSphere(radius: 0.2)
+        let node = SCNNode(geometry: geometry)
+        
+        node.geometry?.firstMaterial?.diffuse.contents = UIColor.red
+        
+        self.parent?.addChildNode(node)
+        self.sensorNode = node
+        
+        print("Adicionando sensor")
+    }
+    
     func move(x: Double, z: Double) {
         let newVector = SCNVector3(x: Float(x)/speedNormalizer, y: 0, z: Float(z)/speedNormalizer)
         
@@ -149,10 +161,13 @@ class Alien: SCNNode, Identifiable {
     
     private func getClosestWall() -> SCNNode {
         var closestWall = walls.first!
-        var closestDistance = self.worldPosition.distanceModule(to: closestWall.worldPosition)
+        var closestDistance = self.presentation.position.distanceModule(to: closestWall.presentation.position)
         
         for wall in walls {
-            let distance = self.worldPosition.distanceModule(to: wall.worldPosition)
+            let distance = self.presentation.position.distanceModule(to: wall.presentation.position)
+            
+            wall.opacity = 0
+            wall.geometry?.firstMaterial?.diffuse.contents = UIColor.red
             
             if distance < closestDistance {
                 closestDistance = distance
@@ -160,6 +175,8 @@ class Alien: SCNNode, Identifiable {
             }
         }
         
+        closestWall.opacity = 1
+        closestWall.geometry?.firstMaterial?.diffuse.contents = UIColor.red
         return closestWall
     }
 }
@@ -169,11 +186,9 @@ extension Alien {
     func getDirectionInput() -> [Double] {
         let wall = self.getClosestWall()
         
-        print("Closest wall position \(wall.worldPosition)")
+        let up = wall.presentation.position.x - self.presentation.position.x
         
-        let up = wall.worldPosition.x - self.worldPosition.x
-        
-        let right = 0 - self.worldPosition.z
+        let right = 0 - self.presentation.position.z
         
         let firstResult = Double(up > 0 ? up : 0)
         let secondResult = Double(right > 0 ? right : 0)
