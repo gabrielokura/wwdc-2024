@@ -16,12 +16,24 @@ struct GameLevelView: View {
             GameLevelViewRepresentable()
                 .ignoresSafeArea()
             
-            if !manager.hasStarted {
-                startButton
-                    .padding(.leading, 56)
-                    .padding(.top, 24)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            if manager.isLoadingMap {
+                ProgressView()
             }
+            
+            VStack {
+                Text("Generation: \(manager.currentGeneration)")
+                
+                if !manager.hasStarted {
+                    startButton
+                }
+                
+                if manager.hasStarted {
+                    killAllAliensButton
+                }
+            }
+            .padding(.leading, 56)
+            .padding(.top, 24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             
             HStack(spacing: 24) {
                 editTerrainButton
@@ -66,6 +78,15 @@ struct GameLevelView: View {
             .foregroundColor(.green)
             .onTapGesture {
                 manager.startGame()
+            }
+    }
+    
+    var killAllAliensButton: some View {
+        Image(systemName: "xmark.circle.fill")
+            .font(.largeTitle)
+            .foregroundColor(.red)
+            .onTapGesture {
+                manager.resetCurrentGeneration()
             }
     }
 }

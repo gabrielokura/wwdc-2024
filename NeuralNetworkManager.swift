@@ -19,8 +19,8 @@ class NeuralNetworkManager {
     let inputCount: Int
     let outputCount: Int
     
-    let frameRate = 5
-    var currentFrame = 0
+    let frameRate = 1
+    var currentFrame = 5
     
     init(population: Int) {
         self.king = nil
@@ -31,37 +31,39 @@ class NeuralNetworkManager {
         self.network = Neat(inputs: self.inputCount, outputs: self.outputCount, population: population, confFile: nil, multithread: false)
     }
     
-    func setupAliens(_ aliens: [Alien]) {
-        self.aliens = aliens
-    }
-    
-    func train() {
+    func train(aliens: [Alien]) {
         currentFrame += 1
         
         if currentFrame % frameRate != 0 {
             return
         }
         
-        currentFrame = 1
+        currentFrame = 0
         
         let queue = DispatchQueue(label: "com.okura.smartAliens",attributes: .concurrent)
         
         queue.async(flags: .barrier) {
+            print("Training")
             for i in 0..<self.aliens.count {
                 let alien = self.aliens[i]
-                
-                if(alien.isDead) {
-                    continue
-                }
                 
                 let inputData: [Double] = alien.generateInputDataForNeuralNetwork()
                 
                 let output = self.network.run(inputs: inputData, inputCount: self.inputCount, outputCount: self.outputCount)
-                
                 self.network.nextGenomeStepOne(alien.fitnessLevel)
                 
-                alien.move(x: output[0], z: output[1])
+                alien.move(x: output[0], z: output[1], breakValue: output[2])
             }
         }
+    }
+    
+    func newGeneration() {
+        // Assign genomes a fitness score from the tests.
+        network.nextGenomeStepTwo()
+        
+        // Do NEAT here.
+        network.epoch()
+        
+        king = network.getKing()
     }
 }
