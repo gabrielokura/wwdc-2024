@@ -7,36 +7,12 @@
 
 import SceneKit
 
-enum AlienType {
-    case purple
-    
-    var health: Int {
-        switch self {
-        case .purple:
-            return 100
-        }
-    }
-    
-    var initialPosition: SCNVector3 {
-        switch self {
-        case .purple:
-            return SCNVector3(5, 0.5, -10)
-        }
-    }
-    
-    var pathNodeName: String {
-        switch self {
-        case .purple:
-            return "purple_path"
-        }
-    }
-}
-
 class Alien: SCNNode, Identifiable {
     var lifeNode: SCNNode!
-    var textNode: SCNNode!
     
-    var type: AlienType!
+    var type: AlienType
+    var direction: MovementDirection
+    
     var path: [SCNVector3] = []
     var sceneNode: SCNNode!
     var contactNode: SCNNode!
@@ -48,14 +24,11 @@ class Alien: SCNNode, Identifiable {
     
     var fitnessLevel: Double = 0
     static let inputCount: Int = 5
-    static let outputCount: Int = 2
-    
-    let speedNormalizer: Float = 0.8
+    static let outputCount: Int = 4
     
     let walls: Matrix<Bool>
     let target: SCNNode
-    
-    var firstPosition: SCNVector3
+
     var moves: Int = 0
     let id: Int
     
@@ -73,8 +46,9 @@ class Alien: SCNNode, Identifiable {
     
         self.target = target
         self.walls = walls
-        self.firstPosition = alienNode.worldPosition
         self.id = id
+        self.type = type
+        self.direction = .bottom
         
         super.init()
         
@@ -86,9 +60,6 @@ class Alien: SCNNode, Identifiable {
         
         self.setupPhysicsBody()
         self.setupLifeNode()
-        self.setupTextNode()
-        
-        self.type = type
         
         self.sceneNode = sceneNode
         
@@ -97,14 +68,6 @@ class Alien: SCNNode, Identifiable {
         
         self.position = type.initialPosition
         self.name = "alien"
-    }
-    
-    private func setupTextNode() {
-        self.textNode = self.childNode(withName: "text", recursively: false)!
-        
-        if let textGeometry = textNode.geometry as? SCNText {
-            textGeometry.string = "ID: \(id)"
-        }
     }
     
     private func setupLifeNode() {
@@ -133,12 +96,8 @@ class Alien: SCNNode, Identifiable {
         
         if health == 0 {
             self.removeFromParentNode()
-
-            updateFitnessLevelWith(getTravelDistance())
             
             self.isDead = true
-//            self.opacity = 0.05
-//            self.physicsBody?.clearAllForces()
         }
         
         lifeNode.isHidden = false
@@ -146,37 +105,59 @@ class Alien: SCNNode, Identifiable {
         lifeNode.scale.x = healthScale
     }
     
-    func move(x: Double, z: Double, breakValue: Double) {
-        let horizontalDirection = x > 0.5 ? 0.5 : -0.5
-        let verticalDirection = z > 0.5 ? 0.5 : -0.5
-        let willBreak = breakValue > 0.95
+    // Directions must have 4 values
+    func move(directions: [Double]) {
+        var top = directions[0];
+        var right = directions[1];
+        var bottom = directions[2];
+        var left = directions[3];
         
-        let newVector = SCNVector3(x: Float(horizontalDirection)/speedNormalizer, y: 0, z: Float(verticalDirection)/speedNormalizer)
-        
-        if (willBreak) {
-            self.physicsBody?.clearAllForces()
-            return
+        // Zerando a direção proibida
+        switch self.direction {
+        case .top:
+            bottom = 0
+        case .right:
+            left = 0
+        case .bottom:
+            top = 0
+        case .left:
+            right = 0
         }
         
-        self.physicsBody?.applyForce(newVector, asImpulse: false)
-        updateFitnessLevelWith(0.01)
+        // Pega a direção com o maior valor
+        if top > right && top > bottom && top > left {
+            self.direction = .top
+        } else if right > top && right > bottom && right > left {
+            self.direction = .right
+        } else if left > top && left > bottom && left > right {
+            self.direction = .left
+        } else {
+            self.direction = .bottom
+        }
+        
+        //TODO: Get from Game Interval
+        let interval: TimeInterval = GameSceneController.gameInterval
+        let nextPosition = self.direction.nextMove(position: self.presentation.position)
+        let movement = SCNAction.move(to: nextPosition, duration: interval)
+        
+        self.runAction(movement)
+        
+        addFitness(0.01)
     }
     
-    private func updateFitnessLevelWith(_ fitness: Double) {
+    private func addFitness(_ fitness: Double) {
         self.fitnessLevel += fitness
     }
     
     func generateInputDataForNeuralNetwork() -> [Double]{
         let direction = getDirectionInput()
+        
+        //TODO: Change to angle to target
         let distanceFromTarget = getDistanceFromTarget()
-        let velocity = getCurrentVelocityXAndZ()
         
         var result: [Double] = []
         result.append(contentsOf: direction)
         result.append(distanceFromTarget)
-//        result.append(contentsOf: velocity)
-        
-        print("Result \(result)")
         
         return result
     }
@@ -192,9 +173,6 @@ class Alien: SCNNode, Identifiable {
         
         self.removeFromParentNode()
         self.isDead = true
-//
-//        let position = self.presentation.worldPosition;
-//        let distance = position.distanceModule(to: firstPosition)
     }
 }
 
@@ -207,17 +185,12 @@ extension Alien {
         let xAlien = Int(self.presentation.position.x)
         let zAlien = Int(self.presentation.position.z)
         
-        let distanceX = abs(Double(self.presentation.position.x.truncatingRemainder(dividingBy: 1)))
-        let distanceZ = abs(Double(self.presentation.position.z.truncatingRemainder(dividingBy: 1)))
+        let up: Double = (walls[xAlien + xBaseSum, zAlien + zBaseSum - 1]) ? 1 : 0
+        let down: Double = (walls[xAlien + xBaseSum, zAlien + zBaseSum + 1]) ? 1 : 0
+        let right: Double = (walls[xAlien + xBaseSum + 1, zAlien + zBaseSum]) ? 1 : 0
+        let left: Double = (walls[xAlien + xBaseSum - 1, zAlien + zBaseSum]) ? 1 : 0
         
-        let up = (walls[xAlien + xBaseSum, zAlien + zBaseSum - 1])
-        let down = (walls[xAlien + xBaseSum, zAlien + zBaseSum + 1])
-        let right = (walls[xAlien + xBaseSum + 1, zAlien + zBaseSum])
-        let left = (walls[xAlien + xBaseSum - 1, zAlien + zBaseSum])
-        
-        print("Up \(up) down \(down) right \(right) left \(left)")
-        
-        return [up ?  distanceZ : 0, down ? (1 - distanceZ) : 0, right ? distanceX : 0, left ? (1 - distanceX) : 0]
+        return [up, right, down, left]
     }
     
     func getDistanceFromTarget() -> Double {
@@ -226,19 +199,6 @@ extension Alien {
         
         let distance = alienPosition.distanceModule(to: targetPosition)
         return Double(distance)
-    }
-    
-    func getTravelDistance() -> Double {
-        let alienPosition = self.presentation.position
-        
-        let distance = alienPosition.distanceModule(to: firstPosition)
-        return Double(distance)
-    }
-    
-    func getCurrentVelocityXAndZ() -> [Double] {
-        let position = self.presentation.position
-        
-        return [Double(position.x), Double(position.z)]
     }
 }
 

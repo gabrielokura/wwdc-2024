@@ -21,6 +21,9 @@ struct GameLevelViewRepresentable: UIViewControllerRepresentable {
 
 
 class GameSceneController: UIViewController {
+    static let gameInterval: TimeInterval = 0.5
+    let population = 10
+    
     var sceneView: SCNView!
     
     private var initialCameraPosition: SCNVector3!
@@ -32,8 +35,6 @@ class GameSceneController: UIViewController {
     var manager: Manager = Manager.instance
     var cancellableBag = Set<AnyCancellable>()
     
-    var neuralNetworkManager: NeuralNetworkManager?
-    
     var terrain: Terrain!
     
     var isPlaying = false
@@ -41,13 +42,8 @@ class GameSceneController: UIViewController {
     var aliens: [Alien] = []
     var deadAliensCount = 0
     
-    let frameRate = 1
-    var currentFrame = 1
-    
     var network: Neat!
     var king: NGenome? = nil
-    
-    let population = 100
     
     var map:Matrix<Bool> = Matrix(rows: 14, columns: 12, defaultValue:false)
     
@@ -155,6 +151,7 @@ class GameSceneController: UIViewController {
         let xBaseSum = 5
         let zBaseSum = 11
         
+        // Creating wall matrix
         _ = terrain.walls.map { wall in
             let x = Int(wall.position.x) + xBaseSum
             let z = Int(wall.position.z) + zBaseSum
@@ -162,11 +159,8 @@ class GameSceneController: UIViewController {
             self.map[x,z] = true
         }
         
-        print(map[4 + xBaseSum, -9 + zBaseSum])
-        print(map[5 + xBaseSum, -9 + zBaseSum])
-        print(map[6 + xBaseSum, -9 + zBaseSum])
-        print(map[5 + xBaseSum, -10 + zBaseSum])
-        print(map[5 + xBaseSum, -11 + zBaseSum])
+        // Creating path matrix
+        
         
         self.manager.finishLoadingMap()
     }
@@ -185,13 +179,13 @@ class GameSceneController: UIViewController {
             aliens.append(alien)
         }
         
-        //        self.neuralNetworkManager = NeuralNetworkManager(population: aliens.count)
         self.network = Neat(inputs: Alien.inputCount, outputs: Alien.outputCount, population: aliens.count, confFile: nil, multithread: false)
         
         print("Population \(aliens.count)")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.isPlaying = true
+            self.gameLoop()
         }
     }
     
@@ -258,7 +252,6 @@ extension GameSceneController: SCNPhysicsContactDelegate {
         }
         
         alien.onCollision(withBullet: false)
-        //        self.alienHitTheWall()
     }
     
     func physicsWorld(_ world: SCNPhysicsWorld, didEnd contact: SCNPhysicsContact) {
@@ -278,8 +271,11 @@ extension GameSceneController: SCNPhysicsContactDelegate {
     }
 }
 
+//MARK: Game Loop
 extension GameSceneController: SCNSceneRendererDelegate {
-    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {}
+    
+    func gameLoop() {
         if !isPlaying {
             return
         }
@@ -288,14 +284,6 @@ extension GameSceneController: SCNSceneRendererDelegate {
             print("Neural network nil")
             return
         }
-        
-        currentFrame += 1
-        
-        if currentFrame % frameRate != 0 {
-            return
-        }
-        
-        currentFrame = 0
         
         queue.async(qos: .userInteractive ,flags: .barrier) {
             for alien in self.aliens {
@@ -307,11 +295,16 @@ extension GameSceneController: SCNSceneRendererDelegate {
                 let inputData: [Double] = alien.generateInputDataForNeuralNetwork()
                 
                 let output = self.network.run(inputs: inputData, inputCount: Alien.inputCount, outputCount: Alien.outputCount)
-                //                print("Alien \(i) with fitness \(alien.fitnessLevel)")
-                alien.move(x: output[0], z: output[1], breakValue: 0)
+
+                alien.move(directions: output)
                 
                 self.network.nextGenomeStepOne(alien.fitnessLevel)
             }
         }
+        
+        // Set a timer for the next game loop
+        _ = Timer.scheduledTimer(withTimeInterval: GameSceneController.gameInterval, repeats: false, block: { timer in
+            self.gameLoop()
+        })
     }
 }
