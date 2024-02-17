@@ -78,7 +78,7 @@ class Alien: SCNNode, Identifiable {
     }
     
     private func setupPhysicsBody() {
-        self.scale = SCNVector3(0.25, 0.25, 0.25)
+        self.scale = SCNVector3(0.5, 0.5, 0.5)
         
         let shape = SCNPhysicsShape(geometry: self.boxShapeWithNodeSize(), options: nil)
         
@@ -96,7 +96,7 @@ class Alien: SCNNode, Identifiable {
         
         if health == 0 {
             self.removeFromParentNode()
-            
+            addFitness(-1)
             self.isDead = true
         }
         
@@ -107,22 +107,12 @@ class Alien: SCNNode, Identifiable {
     
     // Directions must have 4 values
     func move(directions: [Double]) {
-        var top = directions[0];
-        var right = directions[1];
-        var bottom = directions[2];
-        var left = directions[3];
+        let top = directions[0];
+        let right = directions[1];
+        let bottom = directions[2];
+        let left = directions[3];
         
-        // Zerando a direção proibida
-        switch self.direction {
-        case .top:
-            bottom = 0
-        case .right:
-            left = 0
-        case .bottom:
-            top = 0
-        case .left:
-            right = 0
-        }
+        let previusDirection = self.direction
         
         // Pega a direção com o maior valor
         if top > right && top > bottom && top > left {
@@ -142,7 +132,12 @@ class Alien: SCNNode, Identifiable {
         
         self.runAction(movement)
         
-        addFitness(0.01)
+        // Adding fitness
+        if previusDirection.isOpposite(of: self.direction) {
+            addFitness(-0.03)
+        } else {
+            addFitness(0.01)
+        }
     }
     
     private func addFitness(_ fitness: Double) {
@@ -173,6 +168,7 @@ class Alien: SCNNode, Identifiable {
         
         self.removeFromParentNode()
         self.isDead = true
+        
     }
 }
 
@@ -206,9 +202,9 @@ extension Alien {
     func boxShapeWithNodeSize() -> SCNGeometry {
         let min = self.boundingBox.min
         let max = self.boundingBox.max
-        let w = CGFloat(max.x - min.x)/4
-        let h = CGFloat(max.y - min.y)/4
-        let l = CGFloat(max.z - min.z)/4
+        let w = CGFloat(max.x - min.x)/2
+        let h = CGFloat(max.y - min.y)/2
+        let l = CGFloat(max.z - min.z)/2
         
         return SCNBox (width: w , height: h , length: l, chamferRadius: 0.0)
     }

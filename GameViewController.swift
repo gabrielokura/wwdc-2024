@@ -133,18 +133,6 @@ class GameSceneController: UIViewController {
         self.sceneView.pointOfView = cameraNode
     }
     
-    //    func alienHitTheWall() {
-    //        deadAliensCount += 1
-    //        
-    //        if deadAliensCount <= aliens.count {
-    //            return
-    //        }
-    //        
-    //        self.isPlaying = false
-    //        neuralNetworkManager?.newGeneration()
-    //        manager.finishGame()
-    //    }
-    
     func setupTerrain() {
         terrain = Terrain(in: self.scene.rootNode)
         

@@ -53,4 +53,26 @@ enum MovementDirection {
         
         return SCNVector3(x, position.y, z)
     }
+    
+    func isOpposite(of direction: MovementDirection) -> Bool {
+        let currentDirection = self
+        
+        if currentDirection == .top && direction == .bottom {
+            return true
+        }
+        
+        if currentDirection == .bottom && direction == .top {
+            return true
+        }
+        
+        if currentDirection == .left && direction == .right {
+            return true
+        }
+        
+        if currentDirection == .right && direction == .left {
+            return true
+        }
+        
+        return false
+    }
 }
