@@ -54,6 +54,12 @@ class Alien: SCNNode, Identifiable {
         
         self.geometry = alienNode.geometry
         
+        let textNode = alienNode.childNode(withName: "text", recursively: false)
+        
+        if let textGeometry = textNode?.geometry as? SCNText {
+            textGeometry.string = "\(self.id)"
+        }
+        
         for node in alienNode.childNodes {
             self.addChildNode(node)
         }
@@ -95,9 +101,8 @@ class Alien: SCNNode, Identifiable {
         health = max(health - damage, 0)
         
         if health == 0 {
-            self.removeFromParentNode()
-            addFitness(-1)
-            self.isDead = true
+            die()
+            return
         }
         
         lifeNode.isHidden = false
@@ -105,8 +110,22 @@ class Alien: SCNNode, Identifiable {
         lifeNode.scale.x = healthScale
     }
     
+    func die() {
+//        self.removeFromParentNode()
+        self.physicsBody = nil
+        self.physicsBody?.clearAllForces()
+        self.opacity = 0.2
+        self.isDead = true
+        addFitness((1/(getDistanceFromTarget())) * 10)
+//        addFitness(1/Double(moves))
+    }
+    
     // Directions must have 4 values
     func move(directions: [Double]) {
+        if isDead {
+            return
+        }
+        
         let top = directions[0];
         let right = directions[1];
         let bottom = directions[2];
@@ -127,17 +146,22 @@ class Alien: SCNNode, Identifiable {
         
         //TODO: Get from Game Interval
         let interval: TimeInterval = GameSceneController.gameInterval
-        let nextPosition = self.direction.nextMove(position: self.presentation.position)
-        let movement = SCNAction.move(to: nextPosition, duration: interval)
+//        let nextPosition = self.direction.nextMove(position: self.presentation.position)
+//        let movement = SCNAction.move(to: nextPosition, duration: interval)
         
-        self.runAction(movement)
+//        self.runAction(movement, forKey: "movement")
+        self.physicsBody?.clearAllForces()
+        let direction = self.direction.directionWithMagnitude(magnitude: 2);
+        self.physicsBody?.applyForce(direction, asImpulse: true)
         
         // Adding fitness
         if previusDirection.isOpposite(of: self.direction) {
-            addFitness(-0.03)
+            addFitness(-0.01)
         } else {
-            addFitness(0.01)
+            addFitness(0.03)
         }
+        
+        moves += 1
     }
     
     private func addFitness(_ fitness: Double) {
@@ -147,44 +171,50 @@ class Alien: SCNNode, Identifiable {
     func generateInputDataForNeuralNetwork() -> [Double]{
         let direction = getDirectionInput()
         
-        //TODO: Change to angle to target
-        let distanceFromTarget = getDistanceFromTarget()
+        let angle = Double(getAngleFromTarget(target: self.target.presentation.position))
         
         var result: [Double] = []
         result.append(contentsOf: direction)
-        result.append(distanceFromTarget)
+        result.append(angle)
         
         return result
     }
     
     func onCollision(withBullet: Bool) {
-        takeDamage(health)
-    }
-    
-    func reset() {
-        if isDead {
+        if withBullet {
+            takeDamage(health)
             return
         }
         
+        die()
+    }
+    
+    func reset() {
         self.removeFromParentNode()
-        self.isDead = true
-        
+    }
+    
+    func highlight() {
+        self.opacity = 1
+        self.geometry?.firstMaterial?.diffuse.contents = UIColor.red
     }
 }
 
 //MARK:  Neural Network inputs
 extension Alien {
     func getDirectionInput() -> [Double] {
-        let xBaseSum = 5
-        let zBaseSum = 11
         
-        let xAlien = Int(self.presentation.position.x)
-        let zAlien = Int(self.presentation.position.z)
+        let xAlien = Int(self.presentation.position.x.rounded())
+        let zAlien = Int(self.presentation.position.z.rounded())
         
-        let up: Double = (walls[xAlien + xBaseSum, zAlien + zBaseSum - 1]) ? 1 : 0
-        let down: Double = (walls[xAlien + xBaseSum, zAlien + zBaseSum + 1]) ? 1 : 0
-        let right: Double = (walls[xAlien + xBaseSum + 1, zAlien + zBaseSum]) ? 1 : 0
-        let left: Double = (walls[xAlien + xBaseSum - 1, zAlien + zBaseSum]) ? 1 : 0
+        print("position \(self.presentation.position) virou x\(xAlien) z \(zAlien)")
+        
+        let up: Double = walls.indexIsValid(row: xAlien.xToGameMatrix(), column: (zAlien - 1).zToGameMatrix()) ? (walls[xAlien.xToGameMatrix(), (zAlien - 1).zToGameMatrix()] ? 1 : 0) : 1
+                          
+        let down: Double = walls.indexIsValid(row: xAlien.xToGameMatrix(), column: (zAlien + 1).zToGameMatrix()) ? (walls[xAlien.xToGameMatrix(), (zAlien + 1).zToGameMatrix()] ? 1 : 0) : 1
+        
+        let right: Double = walls.indexIsValid(row: (xAlien + 1).xToGameMatrix(), column: (zAlien).zToGameMatrix()) ? (walls[(xAlien + 1).xToGameMatrix(), zAlien.zToGameMatrix()] ? 1 : 0) : 1
+        
+        let left: Double = walls.indexIsValid(row: (xAlien - 1).xToGameMatrix(), column: zAlien.zToGameMatrix()) ? (walls[(xAlien - 1).xToGameMatrix(), zAlien.zToGameMatrix()] ? 1 : 0) : 1
         
         return [up, right, down, left]
     }
@@ -195,6 +225,30 @@ extension Alien {
         
         let distance = alienPosition.distanceModule(to: targetPosition)
         return Double(distance)
+    }
+    
+    func getAngleFromTarget(target: SCNVector3) -> Float {
+        let position = self.presentation.position
+        
+        /// If the snake is to the left of the food return a negative
+        if target.x > position.x {
+            let tan: Float = Float(target.z-position.z)/Float(target.x-position.x)
+            return -(atan(tan)+(Float.pi/2))
+            
+            /// If the snake is to the left of the food return a positive
+        } else  if target.x < position.x {
+            let tan: Float = Float(target.z-position.z)/Float(position.x-target.x)
+            return (atan(tan)+(Float.pi/2))
+        }
+        
+        /// If the snake is directly below the food return pi
+        if target.z > position.z {
+            return Float.pi
+            
+        /// If the snake is drectly above the food return 0
+        } else {
+            return 0.0
+        }
     }
 }
 

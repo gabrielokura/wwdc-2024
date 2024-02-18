@@ -22,7 +22,9 @@ struct GameLevelViewRepresentable: UIViewControllerRepresentable {
 
 class GameSceneController: UIViewController {
     static let gameInterval: TimeInterval = 0.5
-    let population = 10
+    let population = 600
+    static let xBaseSum = 5
+    static let zBaseSum = 11
     
     var sceneView: SCNView!
     
@@ -45,7 +47,7 @@ class GameSceneController: UIViewController {
     var network: Neat!
     var king: NGenome? = nil
     
-    var map:Matrix<Bool> = Matrix(rows: 14, columns: 12, defaultValue:false)
+    var map:Matrix<Bool> = Matrix(rows: 14, columns: 13, defaultValue:false)
     
     let queue = DispatchQueue(label: "com.okura.smartAliens",attributes: .concurrent)
     
@@ -136,13 +138,10 @@ class GameSceneController: UIViewController {
     func setupTerrain() {
         terrain = Terrain(in: self.scene.rootNode)
         
-        let xBaseSum = 5
-        let zBaseSum = 11
-        
         // Creating wall matrix
         _ = terrain.walls.map { wall in
-            let x = Int(wall.position.x) + xBaseSum
-            let z = Int(wall.position.z) + zBaseSum
+            let x = Int(wall.position.x).xToGameMatrix()
+            let z = Int(wall.position.z).zToGameMatrix()
             
             self.map[x,z] = true
         }
@@ -192,13 +191,18 @@ class GameSceneController: UIViewController {
             
             print("King id \(id)")
             print("King fitnes \(self.king?.fitness ?? -1)")
+            
+            if id > 0 {
+                self.aliens[id-1].highlight()
+            }
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             for alien in self.aliens {
                 alien.reset()
             }
         }
+        
     }
     
     @objc func handleTap(_ gestureRecognize: UIGestureRecognizer) {
