@@ -22,7 +22,7 @@ struct GameLevelViewRepresentable: UIViewControllerRepresentable {
 
 class GameSceneController: UIViewController {
     static let gameInterval: TimeInterval = 0.5
-    let population = 600
+    let population = 50
     static let xBaseSum = 5
     static let zBaseSum = 11
     
@@ -76,16 +76,21 @@ class GameSceneController: UIViewController {
         self.sceneView.rendersContinuously = true
         self.sceneView.preferredFramesPerSecond = 60
         
-        self.setupCamera()
-        self.setupBackground()
-        self.subscribeToFixedCameraEvents()
-        self.subscribeToActions()
-        self.setupTerrain()
+        self.setupGame()
         
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         self.sceneView.addGestureRecognizer(tapGesture)
         self.scene.physicsWorld.contactDelegate = self
         self.sceneView.delegate = self
+    }
+    
+    private func setupGame() {
+        self.setupCamera()
+        self.setupBackground()
+        self.subscribeToFixedCameraEvents()
+        self.subscribeToActions()
+        self.setupTerrain()
+        _ = self.setupCheckpoints()
     }
     
     private func subscribeToFixedCameraEvents() {
@@ -111,6 +116,78 @@ class GameSceneController: UIViewController {
         }.store(in: &cancellableBag)
     }
     
+    func returnCameraToInitialPosition() {
+        cameraNode.position = initialCameraPosition
+        cameraNode.rotation = initialCameraRotation
+        self.sceneView.pointOfView = cameraNode
+    }
+    
+    func killAllAliens() {
+        self.isPlaying = false
+        
+        queue.async(qos: .userInteractive, flags: .barrier) {
+            self.network.nextGenomeStepTwo()
+            
+            // Do NEAT here.
+            self.network.epoch()
+            
+            self.king = self.network.getKing()
+            
+            let id = self.king?.id ?? 0
+            
+            print("King id \(id)")
+            print("King fitnes \(self.king?.fitness ?? -1)")
+            
+//            if id > 0 {
+//                self.aliens[id-1].highlight()
+//            }
+//            
+            DispatchQueue.main.async {
+                for alien in self.aliens {
+                    alien.reset()
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.setupAliensPopulation()
+                }
+            }
+        }
+    }
+    
+    @objc func handleTap(_ gestureRecognize: UIGestureRecognizer) {
+        // check what nodes are tapped
+        let p = gestureRecognize.location(in: sceneView)
+        let hitResults = sceneView.hitTest(p, options: [:])
+        // check that we clicked on at least one object
+        if hitResults.count > 0 {
+            // retrieved the first clicked object
+            let result: SCNHitTestResult = hitResults[0]
+            let name = result.node.parent?.name
+            
+            if (name != nil && name!.contains("editable")) {
+                terrain.tapOnTerrain(node: result.node)
+                return
+            }
+        }
+    }
+}
+
+//MARK: Setup functions
+extension GameSceneController {
+    func setupCheckpoints() -> [Checkpoint] {
+        let positions = Checkpoint.positions
+        var checkpoints: [Checkpoint] = []
+        
+        for i in 1...positions.count {
+            let position = positions[i-1]
+            let newCheckpoint = Checkpoint(id: i, position: position)
+            checkpoints.append(newCheckpoint)
+            self.scene.rootNode.addChildNode(newCheckpoint)
+        }
+        
+        return checkpoints
+    }
+    
     private func setupCamera() {
         cameraNode = self.scene.rootNode.childNode(withName: "camera", recursively: false)
         
@@ -127,29 +204,6 @@ class GameSceneController: UIViewController {
                             UIImage(named: "space_bk")]
         
         self.scene.background.contents = skyboxImages
-    }
-    
-    func returnCameraToInitialPosition() {
-        cameraNode.position = initialCameraPosition
-        cameraNode.rotation = initialCameraRotation
-        self.sceneView.pointOfView = cameraNode
-    }
-    
-    func setupTerrain() {
-        terrain = Terrain(in: self.scene.rootNode)
-        
-        // Creating wall matrix
-        _ = terrain.walls.map { wall in
-            let x = Int(wall.position.x).xToGameMatrix()
-            let z = Int(wall.position.z).zToGameMatrix()
-            
-            self.map[x,z] = true
-        }
-        
-        // Creating path matrix
-        
-        
-        self.manager.finishLoadingMap()
     }
     
     func setupAliensPopulation() {
@@ -174,55 +228,29 @@ class GameSceneController: UIViewController {
             self.isPlaying = true
             self.gameLoop()
         }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+            self.killAllAliens()
+        }
     }
     
-    func killAllAliens() {
-        self.isPlaying = false
+    func setupTerrain() {
+        terrain = Terrain(in: self.scene.rootNode)
         
-        queue.async(qos: .userInteractive, flags: .barrier) {
-            self.network.nextGenomeStepTwo()
+        // Creating wall matrix
+        _ = terrain.walls.map { wall in
+            let x = Int(wall.position.x).xToGameMatrix()
+            let z = Int(wall.position.z).zToGameMatrix()
             
-            // Do NEAT here.
-            self.network.epoch()
-            
-            self.king = self.network.getKing()
-            
-            let id = self.king?.id ?? 0
-            
-            print("King id \(id)")
-            print("King fitnes \(self.king?.fitness ?? -1)")
-            
-            if id > 0 {
-                self.aliens[id-1].highlight()
-            }
+            self.map[x,z] = true
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            for alien in self.aliens {
-                alien.reset()
-            }
-        }
+        // Creating path matrix
         
-    }
-    
-    @objc func handleTap(_ gestureRecognize: UIGestureRecognizer) {
-        // check what nodes are tapped
-        let p = gestureRecognize.location(in: sceneView)
-        let hitResults = sceneView.hitTest(p, options: [:])
-        // check that we clicked on at least one object
-        if hitResults.count > 0 {
-            // retrieved the first clicked object
-            let result: SCNHitTestResult = hitResults[0]
-            let name = result.node.parent?.name
-            
-            if (name != nil && name!.contains("editable")) {
-                terrain.tapOnTerrain(node: result.node)
-                return
-            }
-        }
+        
+        self.manager.finishLoadingMap()
     }
 }
-
 
 //MARK: Physics delegate
 extension GameSceneController: SCNPhysicsContactDelegate {
@@ -242,6 +270,14 @@ extension GameSceneController: SCNPhysicsContactDelegate {
             tower.lockCannon(on: alien)
             return
         }
+        
+        if contact.nodeA is Checkpoint || contact.nodeB is Checkpoint {
+            let checkpoint = contact.nodeA is Checkpoint ? contact.nodeA as! Checkpoint : contact.nodeB as! Checkpoint
+            let points = Double(checkpoint.id * 10)
+            alien.hitCheckpoint(points: points, checkpointId: checkpoint.id)
+            return
+        }
+        
         
         alien.onCollision(withBullet: false)
     }

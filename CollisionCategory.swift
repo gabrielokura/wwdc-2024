@@ -12,5 +12,5 @@ struct CollisionCategory: OptionSet {
     static let tower = CollisionCategory(rawValue: 1 << 3)
     static let alien = CollisionCategory(rawValue: 1 << 5)
     static let terrain = CollisionCategory(rawValue: 1 << 7)
-    static let sensor = CollisionCategory(rawValue: 1 << 9)
+    static let checkpoint = CollisionCategory(rawValue: 1 << 9)
 }

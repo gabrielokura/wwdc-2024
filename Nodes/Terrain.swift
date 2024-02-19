@@ -37,7 +37,7 @@ class Terrain {
             if name == "wall"{
                 node.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(node: node))
                 node.physicsBody?.collisionBitMask = CollisionCategory.alien.rawValue
-                node.physicsBody?.contactTestBitMask = CollisionCategory.alien.rawValue | CollisionCategory.sensor.rawValue
+                node.physicsBody?.contactTestBitMask = CollisionCategory.alien.rawValue
                 node.physicsBody?.categoryBitMask = CollisionCategory.terrain.rawValue
                 node.opacity = 0
                 

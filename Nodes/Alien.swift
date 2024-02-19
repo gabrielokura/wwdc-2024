@@ -23,7 +23,7 @@ class Alien: SCNNode, Identifiable {
     var isDead = false
     
     var fitnessLevel: Double = 0
-    static let inputCount: Int = 5
+    static let inputCount: Int = 6
     static let outputCount: Int = 4
     
     let walls: Matrix<Bool>
@@ -31,6 +31,9 @@ class Alien: SCNNode, Identifiable {
 
     var moves: Int = 0
     let id: Int
+    
+    var checkpoints: [Int] = []
+    var sensors: [SCNNode] = []
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("Not implemented")
@@ -64,6 +67,8 @@ class Alien: SCNNode, Identifiable {
             self.addChildNode(node)
         }
         
+        self.sensors = setupSensorsNodes()
+        
         self.setupPhysicsBody()
         self.setupLifeNode()
         
@@ -74,6 +79,14 @@ class Alien: SCNNode, Identifiable {
         
         self.position = type.initialPosition
         self.name = "alien"
+    }
+    
+    private func setupSensorsNodes() -> [SCNNode]{
+        let sensors = self.childNodes { (node, stop) -> Bool in
+            return node.name?.contains("sensor_") ?? false
+        }
+        
+        return sensors
     }
     
     private func setupLifeNode() {
@@ -93,7 +106,7 @@ class Alien: SCNNode, Identifiable {
         self.physicsBody?.angularVelocityFactor = SCNVector3(0, 0, 0)
         
         self.physicsBody?.categoryBitMask = CollisionCategory.alien.rawValue
-        self.physicsBody?.contactTestBitMask = CollisionCategory.tower.rawValue | CollisionCategory.bullet.rawValue | CollisionCategory.terrain.rawValue
+        self.physicsBody?.contactTestBitMask = CollisionCategory.tower.rawValue | CollisionCategory.bullet.rawValue | CollisionCategory.terrain.rawValue | CollisionCategory.checkpoint.rawValue
         self.physicsBody?.collisionBitMask = CollisionCategory.bullet.rawValue | CollisionCategory.terrain.rawValue
     }
     
@@ -108,6 +121,18 @@ class Alien: SCNNode, Identifiable {
         lifeNode.isHidden = false
         let healthScale = Float(health)/Float(fullHealth)
         lifeNode.scale.x = healthScale
+    }
+    
+    func hitCheckpoint(points: Double, checkpointId: Int) {
+        if checkpoints.contains(where: { current in
+            return current == checkpointId
+        }) {
+            return
+        }
+        
+        checkpoints.append(checkpointId)
+        addFitness(points)
+        
     }
     
     func die() {
@@ -145,21 +170,22 @@ class Alien: SCNNode, Identifiable {
         }
         
         //TODO: Get from Game Interval
-        let interval: TimeInterval = GameSceneController.gameInterval
+//        let interval: TimeInterval = GameSceneController.gameInterval
 //        let nextPosition = self.direction.nextMove(position: self.presentation.position)
 //        let movement = SCNAction.move(to: nextPosition, duration: interval)
         
 //        self.runAction(movement, forKey: "movement")
         self.physicsBody?.clearAllForces()
-        let direction = self.direction.directionWithMagnitude(magnitude: 2);
+        let direction = self.direction.directionWithMagnitude(magnitude: 1);
         self.physicsBody?.applyForce(direction, asImpulse: true)
         
         // Adding fitness
         if previusDirection.isOpposite(of: self.direction) {
             addFitness(-0.01)
-        } else {
-            addFitness(0.03)
         }
+//        } else {
+//            addFitness(0.03)
+//        }
         
         moves += 1
     }
@@ -170,12 +196,13 @@ class Alien: SCNNode, Identifiable {
     
     func generateInputDataForNeuralNetwork() -> [Double]{
         let direction = getDirectionInput()
-        
+        let distance = getDistanceFromTarget()
         let angle = Double(getAngleFromTarget(target: self.target.presentation.position))
         
         var result: [Double] = []
         result.append(contentsOf: direction)
         result.append(angle)
+        result.append(distance)
         
         return result
     }
@@ -202,11 +229,8 @@ class Alien: SCNNode, Identifiable {
 //MARK:  Neural Network inputs
 extension Alien {
     func getDirectionInput() -> [Double] {
-        
         let xAlien = Int(self.presentation.position.x.rounded())
         let zAlien = Int(self.presentation.position.z.rounded())
-        
-        print("position \(self.presentation.position) virou x\(xAlien) z \(zAlien)")
         
         let up: Double = walls.indexIsValid(row: xAlien.xToGameMatrix(), column: (zAlien - 1).zToGameMatrix()) ? (walls[xAlien.xToGameMatrix(), (zAlien - 1).zToGameMatrix()] ? 1 : 0) : 1
                           
@@ -216,7 +240,13 @@ extension Alien {
         
         let left: Double = walls.indexIsValid(row: (xAlien - 1).xToGameMatrix(), column: zAlien.zToGameMatrix()) ? (walls[(xAlien - 1).xToGameMatrix(), zAlien.zToGameMatrix()] ? 1 : 0) : 1
         
-        return [up, right, down, left]
+        let result = [up, right, down, left]
+        
+        for i in 0..<result.count {
+            self.sensors[i].opacity = result[i]
+        }
+        
+        return result
     }
     
     func getDistanceFromTarget() -> Double {
@@ -252,13 +282,14 @@ extension Alien {
     }
 }
 
+//MARK: Physics body shape size
 extension Alien {
     func boxShapeWithNodeSize() -> SCNGeometry {
         let min = self.boundingBox.min
         let max = self.boundingBox.max
-        let w = CGFloat(max.x - min.x)/2
-        let h = CGFloat(max.y - min.y)/2
-        let l = CGFloat(max.z - min.z)/2
+        let w = CGFloat(max.x - min.x)/4
+        let h = CGFloat(max.y - min.y)/4
+        let l = CGFloat(max.z - min.z)/4
         
         return SCNBox (width: w , height: h , length: l, chamferRadius: 0.0)
     }
