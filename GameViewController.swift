@@ -21,8 +21,8 @@ struct GameLevelViewRepresentable: UIViewControllerRepresentable {
 
 
 class GameSceneController: UIViewController {
-    static let gameInterval: TimeInterval = 0.5
-    let population = 50
+    static let gameInterval: TimeInterval = 0.15
+    let population = 1
     static let xBaseSum = 5
     static let zBaseSum = 11
     

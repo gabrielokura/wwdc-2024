@@ -35,6 +35,8 @@ class Alien: SCNNode, Identifiable {
     var checkpoints: [Int] = []
     var sensors: [SCNNode] = []
     
+    let radius: Float = 0.1
+    
     required init?(coder aDecoder: NSCoder) {
         fatalError("Not implemented")
     }
@@ -229,24 +231,113 @@ class Alien: SCNNode, Identifiable {
 //MARK:  Neural Network inputs
 extension Alien {
     func getDirectionInput() -> [Double] {
-        let xAlien = Int(self.presentation.position.x.rounded())
-        let zAlien = Int(self.presentation.position.z.rounded())
+        let position = self.presentation.position
         
-        let up: Double = walls.indexIsValid(row: xAlien.xToGameMatrix(), column: (zAlien - 1).zToGameMatrix()) ? (walls[xAlien.xToGameMatrix(), (zAlien - 1).zToGameMatrix()] ? 1 : 0) : 1
+        print("Position \(position)")
+        
+        let up: Double = Double(getDistanceFromTopWall(x: position.x, z: position.z))
                           
-        let down: Double = walls.indexIsValid(row: xAlien.xToGameMatrix(), column: (zAlien + 1).zToGameMatrix()) ? (walls[xAlien.xToGameMatrix(), (zAlien + 1).zToGameMatrix()] ? 1 : 0) : 1
+        let down: Double = Double(getDistanceFromBotWall(x: position.x, z: position.z))
         
-        let right: Double = walls.indexIsValid(row: (xAlien + 1).xToGameMatrix(), column: (zAlien).zToGameMatrix()) ? (walls[(xAlien + 1).xToGameMatrix(), zAlien.zToGameMatrix()] ? 1 : 0) : 1
+        let right: Double = Double(getDistanceFromRightWall(x: position.x, z: position.z))
         
-        let left: Double = walls.indexIsValid(row: (xAlien - 1).xToGameMatrix(), column: zAlien.zToGameMatrix()) ? (walls[(xAlien - 1).xToGameMatrix(), zAlien.zToGameMatrix()] ? 1 : 0) : 1
+        let left: Double = Double(getDistanceFromLeftWall(x: position.x, z: position.z))
         
         let result = [up, right, down, left]
         
         for i in 0..<result.count {
-            self.sensors[i].opacity = result[i]
+            self.sensors[i].opacity = result[i] == 1 ? 0 : result[i]
         }
         
         return result
+    }
+    
+    func getDistanceFromRightWall(x: Float, z: Float) -> Float {
+        let roundedX = Int(x)
+        let roundedZ = Int(z)
+        
+        let isPositionValid = walls.indexIsValid(row: (roundedX + 1).xToGameMatrix(), column: roundedZ.zToGameMatrix())
+        
+        print("Right \(roundedX + 1), \(roundedZ)")
+        
+        if !isPositionValid {
+            let right = Float(roundedX + 1)
+            return abs(right) - abs(x) - self.radius
+        }
+        
+        let hasWall = walls[(roundedX + 1).xToGameMatrix(), roundedZ.zToGameMatrix()]
+        
+        if hasWall {
+            let right = Float(roundedX + 1)
+            print(abs(right) - abs(x) - self.radius)
+            return abs(right) - abs(x) - self.radius
+        }
+        
+        print("Não tem na direita, retornando 1")
+        return 1.0
+    }
+    
+    func getDistanceFromLeftWall(x: Float, z: Float) -> Float {
+        let roundedX = Int(x)
+        let roundedZ = Int(z)
+        
+        let isPositionValid = walls.indexIsValid(row: (roundedX - 1).xToGameMatrix(), column: roundedZ.zToGameMatrix())
+        
+        if !isPositionValid {
+            let left = Float(roundedX - 1)
+            return abs(left) - abs(x) - self.radius
+        }
+        
+        let hasWall = walls[(roundedX - 1).xToGameMatrix(), roundedZ.zToGameMatrix()]
+        
+        if hasWall {
+            let left = Float(roundedX + 1)
+            return abs(left) - abs(x) - self.radius
+        }
+        
+        return 1.0
+    }
+    
+    func getDistanceFromTopWall(x: Float, z: Float) -> Float {
+        let roundedX = Int(x)
+        let roundedZ = Int(z)
+        
+        let isPositionValid = walls.indexIsValid(row: (roundedX).xToGameMatrix(), column: (roundedZ + 1).zToGameMatrix())
+        
+        if !isPositionValid {
+            let top = Float(roundedZ + 1)
+            return abs(top) - abs(z) - self.radius
+        }
+        
+        let hasWall = walls[(roundedX).xToGameMatrix(), (roundedZ + 1).zToGameMatrix()]
+        
+        if hasWall {
+            let top = Float(roundedZ + 1)
+            return abs(top) - abs(z) - self.radius
+        }
+        
+        return 1.0
+    }
+    
+    func getDistanceFromBotWall(x: Float, z: Float) -> Float {
+        let roundedX = Int(x)
+        let roundedZ = Int(z)
+        
+        let isPositionValid = walls.indexIsValid(row: (roundedX).xToGameMatrix(), column: (roundedZ - 1).zToGameMatrix())
+        
+        if !isPositionValid {
+            let bot = Float(roundedZ - 1)
+            return abs(bot) - abs(z) - self.radius
+        }
+        
+        let hasWall = walls[(roundedX).xToGameMatrix(), (roundedZ - 1).zToGameMatrix()]
+        
+        if hasWall {
+            let bot = Float(roundedZ - 1)
+            return abs(bot) - abs(z) - self.radius
+        }
+        
+        return 1.0
     }
     
     func getDistanceFromTarget() -> Double {
