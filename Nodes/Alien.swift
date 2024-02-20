@@ -23,7 +23,7 @@ class Alien: SCNNode, Identifiable {
     var isDead = false
     
     var fitnessLevel: Double = 0
-    static let inputCount: Int = 6
+    static let inputCount: Int = 5
     static let outputCount: Int = 4
     
     let walls: Matrix<Bool>
@@ -35,7 +35,8 @@ class Alien: SCNNode, Identifiable {
     var checkpoints: [Int] = []
     var sensors: [SCNNode] = []
     
-    let radius: Float = 0.1
+    let radius: Float = 0.6
+    var firstDistance: Double = 0
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("Not implemented")
@@ -81,6 +82,8 @@ class Alien: SCNNode, Identifiable {
         
         self.position = type.initialPosition
         self.name = "alien"
+        
+        self.firstDistance = getDistanceFromTarget()
     }
     
     private func setupSensorsNodes() -> [SCNNode]{
@@ -183,7 +186,7 @@ class Alien: SCNNode, Identifiable {
         
         // Adding fitness
         if previusDirection.isOpposite(of: self.direction) {
-            addFitness(-0.01)
+            addFitness(-0.1)
         }
 //        } else {
 //            addFitness(0.03)
@@ -198,13 +201,13 @@ class Alien: SCNNode, Identifiable {
     
     func generateInputDataForNeuralNetwork() -> [Double]{
         let direction = getDirectionInput()
-        let distance = getDistanceFromTarget()
-        let angle = Double(getAngleFromTarget(target: self.target.presentation.position))
+        let normalizedDistance = getDistanceFromTarget()/firstDistance
+//        let angle = Double(getAngleFromTarget(target: self.target.presentation.position))
         
         var result: [Double] = []
         result.append(contentsOf: direction)
-        result.append(angle)
-        result.append(distance)
+//        result.append(angle)
+        result.append(normalizedDistance)
         
         return result
     }
@@ -233,8 +236,6 @@ extension Alien {
     func getDirectionInput() -> [Double] {
         let position = self.presentation.position
         
-        print("Position \(position)")
-        
         let up: Double = Double(getDistanceFromTopWall(x: position.x, z: position.z))
                           
         let down: Double = Double(getDistanceFromBotWall(x: position.x, z: position.z))
@@ -243,101 +244,76 @@ extension Alien {
         
         let left: Double = Double(getDistanceFromLeftWall(x: position.x, z: position.z))
         
-        let result = [up, right, down, left]
+        let result = [up*2, right*2, down*2, left*2]
+        
+        print("result \(result)")
         
         for i in 0..<result.count {
-            self.sensors[i].opacity = result[i] == 1 ? 0 : result[i]
+            self.sensors[i].opacity = result[i] == 0 ? 0 : 1 - result[i]
+//            print("Opacity \(i) \(result[i]*2)")
         }
         
         return result
     }
     
     func getDistanceFromRightWall(x: Float, z: Float) -> Float {
-        let roundedX = Int(x)
-        let roundedZ = Int(z)
-        
-        let isPositionValid = walls.indexIsValid(row: (roundedX + 1).xToGameMatrix(), column: roundedZ.zToGameMatrix())
-        
-        print("Right \(roundedX + 1), \(roundedZ)")
-        
-        if !isPositionValid {
-            let right = Float(roundedX + 1)
-            return abs(right) - abs(x) - self.radius
-        }
+        let roundedX = Int(x.rounded())
+        let roundedZ = Int(z.rounded())
         
         let hasWall = walls[(roundedX + 1).xToGameMatrix(), roundedZ.zToGameMatrix()]
         
         if hasWall {
             let right = Float(roundedX + 1)
-            print(abs(right) - abs(x) - self.radius)
-            return abs(right) - abs(x) - self.radius
+//            print("Right \(abs(right - x) - self.radius)")
+            return abs(right - x) - self.radius
         }
-        
-        print("Não tem na direita, retornando 1")
-        return 1.0
+
+        return 0
     }
     
     func getDistanceFromLeftWall(x: Float, z: Float) -> Float {
-        let roundedX = Int(x)
-        let roundedZ = Int(z)
-        
-        let isPositionValid = walls.indexIsValid(row: (roundedX - 1).xToGameMatrix(), column: roundedZ.zToGameMatrix())
-        
-        if !isPositionValid {
-            let left = Float(roundedX - 1)
-            return abs(left) - abs(x) - self.radius
-        }
+        let roundedX = Int(x.rounded())
+        let roundedZ = Int(z.rounded())
         
         let hasWall = walls[(roundedX - 1).xToGameMatrix(), roundedZ.zToGameMatrix()]
         
         if hasWall {
-            let left = Float(roundedX + 1)
-            return abs(left) - abs(x) - self.radius
+            let left = Float(roundedX - 1)
+//            print("Left \(abs(left - x) - self.radius)")
+            return abs(left - x) - self.radius
         }
         
-        return 1.0
+        return 0
     }
     
     func getDistanceFromTopWall(x: Float, z: Float) -> Float {
-        let roundedX = Int(x)
-        let roundedZ = Int(z)
-        
-        let isPositionValid = walls.indexIsValid(row: (roundedX).xToGameMatrix(), column: (roundedZ + 1).zToGameMatrix())
-        
-        if !isPositionValid {
-            let top = Float(roundedZ + 1)
-            return abs(top) - abs(z) - self.radius
-        }
-        
-        let hasWall = walls[(roundedX).xToGameMatrix(), (roundedZ + 1).zToGameMatrix()]
-        
-        if hasWall {
-            let top = Float(roundedZ + 1)
-            return abs(top) - abs(z) - self.radius
-        }
-        
-        return 1.0
-    }
-    
-    func getDistanceFromBotWall(x: Float, z: Float) -> Float {
-        let roundedX = Int(x)
-        let roundedZ = Int(z)
-        
-        let isPositionValid = walls.indexIsValid(row: (roundedX).xToGameMatrix(), column: (roundedZ - 1).zToGameMatrix())
-        
-        if !isPositionValid {
-            let bot = Float(roundedZ - 1)
-            return abs(bot) - abs(z) - self.radius
-        }
+        let roundedX = Int(x.rounded())
+        let roundedZ = Int(z.rounded())
         
         let hasWall = walls[(roundedX).xToGameMatrix(), (roundedZ - 1).zToGameMatrix()]
         
         if hasWall {
-            let bot = Float(roundedZ - 1)
-            return abs(bot) - abs(z) - self.radius
+            let top = Float(roundedZ - 1)
+//            print("Top \(abs(top - z) - self.radius)")
+            return abs(top - z) - self.radius
         }
         
-        return 1.0
+        return 0
+    }
+    
+    func getDistanceFromBotWall(x: Float, z: Float) -> Float {
+        let roundedX = Int(x.rounded())
+        let roundedZ = Int(z.rounded())
+        
+        let hasWall = walls[(roundedX).xToGameMatrix(), (roundedZ + 1).zToGameMatrix()]
+        
+        if hasWall {
+            let bot = Float(roundedZ + 1)
+//            print("Bot \(abs(bot - z) - self.radius)")
+            return abs(bot - z) - self.radius
+        }
+        
+        return 0
     }
     
     func getDistanceFromTarget() -> Double {
@@ -378,9 +354,9 @@ extension Alien {
     func boxShapeWithNodeSize() -> SCNGeometry {
         let min = self.boundingBox.min
         let max = self.boundingBox.max
-        let w = CGFloat(max.x - min.x)/4
-        let h = CGFloat(max.y - min.y)/4
-        let l = CGFloat(max.z - min.z)/4
+        let w = CGFloat(max.x - min.x)/6
+        let h = CGFloat(max.y - min.y)/6
+        let l = CGFloat(max.z - min.z)/6
         
         return SCNBox (width: w , height: h , length: l, chamferRadius: 0.0)
     }

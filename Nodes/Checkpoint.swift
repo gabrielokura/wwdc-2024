@@ -10,6 +10,7 @@ import SceneKit
 class Checkpoint: SCNNode {
     static let positions: [SCNVector3] = [
         SCNVector3(5, 0.514, -8),
+        SCNVector3(5, 0.514, -6),
         SCNVector3(4, 0.514, -6),
         SCNVector3(2.5, 0.514, -6),
         SCNVector3(2, 0.514, -3)

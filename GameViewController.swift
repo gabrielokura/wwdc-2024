@@ -21,8 +21,8 @@ struct GameLevelViewRepresentable: UIViewControllerRepresentable {
 
 
 class GameSceneController: UIViewController {
-    static let gameInterval: TimeInterval = 0.15
-    let population = 1
+    static let gameInterval: TimeInterval = 0.25
+    let population = 100
     static let xBaseSum = 5
     static let zBaseSum = 11
     
@@ -229,7 +229,7 @@ extension GameSceneController {
             self.gameLoop()
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
             self.killAllAliens()
         }
     }
@@ -246,7 +246,8 @@ extension GameSceneController {
         }
         
         // Creating path matrix
-        
+        print(map[5.xToGameMatrix(), (-11).zToGameMatrix()])
+        print(map[5.xToGameMatrix(), (-5).zToGameMatrix()])
         
         self.manager.finishLoadingMap()
     }
