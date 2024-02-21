@@ -9,7 +9,7 @@ import Foundation
 import Combine
 
 enum GameActions {
-    case start, returnCamera, startEditing, finishEditing, resetGeneration
+    case start(Int), returnCamera, startEditing, finishEditing, resetGeneration
 }
 
 class Manager: ObservableObject {
@@ -36,8 +36,7 @@ class Manager: ObservableObject {
     
     func startGame() {
         hasStarted = true
-        currentGeneration += 1
-        actionStream.send(.start)
+        actionStream.send(.start(50))
     }
     
     func finishGame() {
@@ -54,6 +53,12 @@ class Manager: ObservableObject {
     func finishLoadingMap() {
         DispatchQueue.main.async {
             self.isLoadingMap = false
+        }
+    }
+    
+    func newGeneration() {
+        DispatchQueue.main.async {
+            self.currentGeneration += 1
         }
     }
     

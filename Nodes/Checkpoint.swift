@@ -12,8 +12,13 @@ class Checkpoint: SCNNode {
         SCNVector3(5, 0.514, -8),
         SCNVector3(5, 0.514, -6),
         SCNVector3(4, 0.514, -6),
+        SCNVector3(4, 0.514, -8),
+        SCNVector3(2.5, 0.514, -8),
         SCNVector3(2.5, 0.514, -6),
-        SCNVector3(2, 0.514, -3)
+        SCNVector3(2, 0.514, -3),
+        SCNVector3(2, 0.514, -5),
+        SCNVector3(0, 0.514, -3),
+        SCNVector3(0, 0.514, 0),
     ]
     
     let id: Int
@@ -25,7 +30,8 @@ class Checkpoint: SCNNode {
         
         let sphere = SCNSphere(radius: 0.1)
         self.geometry = sphere
-        let shape = SCNPhysicsShape(geometry: sphere, options: nil)
+        let contactShape = SCNSphere(radius: 0.2)
+        let shape = SCNPhysicsShape(geometry: contactShape, options: nil)
         self.physicsBody = SCNPhysicsBody(type: .dynamic, shape: shape)
         self.physicsBody?.isAffectedByGravity = false
         

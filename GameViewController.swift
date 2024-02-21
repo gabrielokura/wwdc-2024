@@ -23,9 +23,9 @@ struct GameLevelViewRepresentable: UIViewControllerRepresentable {
 class GameSceneController: UIViewController {
     static let gameInterval: TimeInterval = 0.25
     static let alienSpeed: Float = 1.0
-    static let population = 50
     static let xBaseSum = 6
     static let zBaseSum = 11
+    static let timeBetweenCheckpoints: TimeInterval = 4
     
     var sceneView: SCNView!
     
@@ -45,6 +45,8 @@ class GameSceneController: UIViewController {
     var aliens: [Alien] = []
     var deadAliens: [Alien] = []
     var reachedCheckpoints: [Checkpoint] = []
+    var countdown: Timer?
+    var population: Int = 0
     
     var network: Neat!
     var king: NGenome? = nil
@@ -110,8 +112,8 @@ class GameSceneController: UIViewController {
                 self.terrain.startEditing()
             case .finishEditing:
                 self.terrain.finishEditing()
-            case .start:
-                self.setupAliensPopulation()
+            case .start(let population):
+                self.setupAliensPopulation(aliensPopulation: population)
             case .resetGeneration:
                 self.killAllAliens()
             }
@@ -149,10 +151,8 @@ class GameSceneController: UIViewController {
                 for alien in self.aliens {
                     alien.reset()
                 }
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self.setupAliensPopulation()
-                }
+            
+                self.setupAliensPopulation(aliensPopulation: self.population)
             }
         }
     }
@@ -176,12 +176,26 @@ class GameSceneController: UIViewController {
         }
         
         self.reachedCheckpoints.append(checkpoint)
+        resetCountingDown()
+        startCountingDown()
         print("Alien chegou em novo checkpoint")
         print("Resetar count down")
     }
     
+    func resetCountingDown() {
+        DispatchQueue.main.async {
+            self.countdown?.invalidate()
+        }
+    }
+    
     func startCountingDown() {
-        // IF aliens do not reach checkpoint, restart the game
+        DispatchQueue.main.async {
+            print("Começou contagem regressiva")
+            self.countdown = Timer.scheduledTimer(withTimeInterval: GameSceneController.timeBetweenCheckpoints, repeats: false, block: { timer in
+                print("Acabou o tempo")
+                self.killAllAliens()
+            })
+        }
     }
     
     @objc func handleTap(_ gestureRecognize: UIGestureRecognizer) {
@@ -236,7 +250,7 @@ extension GameSceneController {
         self.scene.background.contents = skyboxImages
     }
     
-    func setupAliensPopulation() {
+    func setupAliensPopulation(aliensPopulation: Int) {
         guard let trophy = self.scene.rootNode.childNode(withName: "trophy", recursively: false) else {
             print("Cannot find trophy")
             return
@@ -244,7 +258,12 @@ extension GameSceneController {
         
         aliens = []
         deadAliens = []
-        for i in 1...GameSceneController.population{
+        self.population = aliensPopulation
+        manager.newGeneration()
+        reachedCheckpoints = []
+        resetCountingDown()
+        
+        for i in 1...population{
             let alien = Alien(.purple, walls: self.map, target: trophy, id: i, speed: GameSceneController.alienSpeed)!
             sceneView.scene?.rootNode.addChildNode(alien)
             aliens.append(alien)
@@ -361,8 +380,8 @@ extension GameSceneController: SCNSceneRendererDelegate {
         }
         
         // Set a timer for the next game loop
-        _ = Timer.scheduledTimer(withTimeInterval: GameSceneController.gameInterval, repeats: false, block: { timer in
+        _ = DispatchQueue.main.asyncAfter(deadline: .now() + GameSceneController.gameInterval) {
             self.gameLoop()
-        })
+        }
     }
 }
