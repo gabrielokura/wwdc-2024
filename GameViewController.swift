@@ -22,8 +22,9 @@ struct GameLevelViewRepresentable: UIViewControllerRepresentable {
 
 class GameSceneController: UIViewController {
     static let gameInterval: TimeInterval = 0.25
-    let population = 100
-    static let xBaseSum = 5
+    static let alienSpeed: Float = 1.0
+    static let population = 50
+    static let xBaseSum = 6
     static let zBaseSum = 11
     
     var sceneView: SCNView!
@@ -42,12 +43,13 @@ class GameSceneController: UIViewController {
     var isPlaying = false
     
     var aliens: [Alien] = []
-    var deadAliensCount = 0
+    var deadAliens: [Alien] = []
+    var reachedCheckpoints: [Checkpoint] = []
     
     var network: Neat!
     var king: NGenome? = nil
     
-    var map:Matrix<Bool> = Matrix(rows: 14, columns: 13, defaultValue:false)
+    var map:Matrix<Bool> = Matrix(rows: 20, columns: 20, defaultValue:false)
     
     let queue = DispatchQueue(label: "com.okura.smartAliens",attributes: .concurrent)
     
@@ -72,7 +74,7 @@ class GameSceneController: UIViewController {
         self.scene = scene
         
         self.sceneView.showsStatistics = true
-        self.sceneView.debugOptions = [.showConstraints, .showSkeletons, .showPhysicsShapes]
+//        self.sceneView.debugOptions = [.showConstraints, .showSkeletons, .showPhysicsShapes]
         self.sceneView.rendersContinuously = true
         self.sceneView.preferredFramesPerSecond = 60
         
@@ -138,9 +140,10 @@ class GameSceneController: UIViewController {
             print("King id \(id)")
             print("King fitnes \(self.king?.fitness ?? -1)")
             
-//            if id > 0 {
-//                self.aliens[id-1].highlight()
-//            }
+            //TODO: Destacar o alien com melhor fitness a todo momento
+            if id > 0 {
+                self.aliens[id-1].highlight()
+            }
 //            
             DispatchQueue.main.async {
                 for alien in self.aliens {
@@ -152,6 +155,33 @@ class GameSceneController: UIViewController {
                 }
             }
         }
+    }
+    
+    func alienDied(_ alien: Alien) {
+        if deadAliens.contains(alien) {
+            return
+        }
+        
+        deadAliens.append(alien)
+        
+        if deadAliens.count == aliens.count {
+            print("Everybody is dead! Restart population")
+            killAllAliens()
+        }
+    }
+    
+    func alienReachCheckpoint(_ checkpoint: Checkpoint) {
+        if reachedCheckpoints.contains(checkpoint) {
+            return
+        }
+        
+        self.reachedCheckpoints.append(checkpoint)
+        print("Alien chegou em novo checkpoint")
+        print("Resetar count down")
+    }
+    
+    func startCountingDown() {
+        // IF aliens do not reach checkpoint, restart the game
     }
     
     @objc func handleTap(_ gestureRecognize: UIGestureRecognizer) {
@@ -213,9 +243,9 @@ extension GameSceneController {
         }
         
         aliens = []
-        deadAliensCount = 0
-        for i in 1...population{
-            let alien = Alien(.purple, in: self.scene.rootNode, walls: self.map, target: trophy, id: i)!
+        deadAliens = []
+        for i in 1...GameSceneController.population{
+            let alien = Alien(.purple, walls: self.map, target: trophy, id: i, speed: GameSceneController.alienSpeed)!
             sceneView.scene?.rootNode.addChildNode(alien)
             aliens.append(alien)
         }
@@ -227,10 +257,7 @@ extension GameSceneController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.isPlaying = true
             self.gameLoop()
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
-            self.killAllAliens()
+            self.startCountingDown()
         }
     }
     
@@ -276,11 +303,13 @@ extension GameSceneController: SCNPhysicsContactDelegate {
             let checkpoint = contact.nodeA is Checkpoint ? contact.nodeA as! Checkpoint : contact.nodeB as! Checkpoint
             let points = Double(checkpoint.id * 10)
             alien.hitCheckpoint(points: points, checkpointId: checkpoint.id)
+            alienReachCheckpoint(checkpoint)
             return
         }
         
         
         alien.onCollision(withBullet: false)
+        alienDied(alien)
     }
     
     func physicsWorld(_ world: SCNPhysicsWorld, didEnd contact: SCNPhysicsContact) {

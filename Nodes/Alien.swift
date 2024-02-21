@@ -8,17 +8,16 @@
 import SceneKit
 
 class Alien: SCNNode, Identifiable {
-    var lifeNode: SCNNode!
+    private var lifeNode: SCNNode!
     
     var type: AlienType
     var direction: MovementDirection
+    let movementSpeed: Float
     
-    var path: [SCNVector3] = []
-    var sceneNode: SCNNode!
-    var contactNode: SCNNode!
+    private var path: [SCNVector3] = []
     
-    var fullHealth: Int!
-    var health: Int!
+    private var fullHealth: Int!
+    private var health: Int!
     
     var isDead = false
     
@@ -29,20 +28,19 @@ class Alien: SCNNode, Identifiable {
     let walls: Matrix<Bool>
     let target: SCNNode
 
-    var moves: Int = 0
     let id: Int
     
-    var checkpoints: [Int] = []
-    var sensors: [SCNNode] = []
+    private var checkpoints: [Int] = []
+    private var sensors: [SCNNode] = []
     
-    let radius: Float = 0.6
-    var firstDistance: Double = 0
+    private let radius: Float = 0.6
+    private var firstDistance: Double = 0
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("Not implemented")
     }
     
-    init?(_ type: AlienType, in sceneNode: SCNNode!, walls: Matrix<Bool>, target: SCNNode, id: Int) {
+    init?(_ type: AlienType, walls: Matrix<Bool>, target: SCNNode, id: Int, speed: Float) {
         guard let alienScene = SCNScene(named: "enemy_ufoPurple.scn") else {
             return nil
         }
@@ -55,6 +53,7 @@ class Alien: SCNNode, Identifiable {
         self.id = id
         self.type = type
         self.direction = .bottom
+        self.movementSpeed = speed
         
         super.init()
         
@@ -74,8 +73,6 @@ class Alien: SCNNode, Identifiable {
         
         self.setupPhysicsBody()
         self.setupLifeNode()
-        
-        self.sceneNode = sceneNode
         
         self.fullHealth = type.health
         self.health = type.health
@@ -141,13 +138,10 @@ class Alien: SCNNode, Identifiable {
     }
     
     func die() {
-//        self.removeFromParentNode()
         self.physicsBody = nil
         self.physicsBody?.clearAllForces()
         self.opacity = 0.2
         self.isDead = true
-        addFitness((1/(getDistanceFromTarget())) * 10)
-//        addFitness(1/Double(moves))
     }
     
     // Directions must have 4 values
@@ -156,12 +150,21 @@ class Alien: SCNNode, Identifiable {
             return
         }
         
-        let top = directions[0];
-        let right = directions[1];
-        let bottom = directions[2];
-        let left = directions[3];
+        var top = directions[0];
+        var right = directions[1];
+        var bottom = directions[2];
+        var left = directions[3];
         
-        let previusDirection = self.direction
+        switch self.direction {
+        case .top:
+            bottom = 0
+        case .right:
+            left = 0
+        case .bottom:
+            top = 0
+        case .left:
+            right = 0
+        }
         
         // Pega a direção com o maior valor
         if top > right && top > bottom && top > left {
@@ -174,25 +177,9 @@ class Alien: SCNNode, Identifiable {
             self.direction = .bottom
         }
         
-        //TODO: Get from Game Interval
-//        let interval: TimeInterval = GameSceneController.gameInterval
-//        let nextPosition = self.direction.nextMove(position: self.presentation.position)
-//        let movement = SCNAction.move(to: nextPosition, duration: interval)
-        
-//        self.runAction(movement, forKey: "movement")
         self.physicsBody?.clearAllForces()
-        let direction = self.direction.directionWithMagnitude(magnitude: 1);
+        let direction = self.direction.directionWithMagnitude(magnitude: movementSpeed);
         self.physicsBody?.applyForce(direction, asImpulse: true)
-        
-        // Adding fitness
-        if previusDirection.isOpposite(of: self.direction) {
-            addFitness(-0.1)
-        }
-//        } else {
-//            addFitness(0.03)
-//        }
-        
-        moves += 1
     }
     
     private func addFitness(_ fitness: Double) {
@@ -246,11 +233,8 @@ extension Alien {
         
         let result = [up*2, right*2, down*2, left*2]
         
-        print("result \(result)")
-        
         for i in 0..<result.count {
             self.sensors[i].opacity = result[i] == 0 ? 0 : 1 - result[i]
-//            print("Opacity \(i) \(result[i]*2)")
         }
         
         return result
@@ -264,7 +248,6 @@ extension Alien {
         
         if hasWall {
             let right = Float(roundedX + 1)
-//            print("Right \(abs(right - x) - self.radius)")
             return abs(right - x) - self.radius
         }
 
@@ -327,22 +310,18 @@ extension Alien {
     func getAngleFromTarget(target: SCNVector3) -> Float {
         let position = self.presentation.position
         
-        /// If the snake is to the left of the food return a negative
         if target.x > position.x {
             let tan: Float = Float(target.z-position.z)/Float(target.x-position.x)
             return -(atan(tan)+(Float.pi/2))
             
-            /// If the snake is to the left of the food return a positive
         } else  if target.x < position.x {
             let tan: Float = Float(target.z-position.z)/Float(position.x-target.x)
             return (atan(tan)+(Float.pi/2))
         }
         
-        /// If the snake is directly below the food return pi
         if target.z > position.z {
             return Float.pi
             
-        /// If the snake is drectly above the food return 0
         } else {
             return 0.0
         }
