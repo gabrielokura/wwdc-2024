@@ -22,7 +22,8 @@ struct GameLevelViewRepresentable: UIViewControllerRepresentable {
 
 class GameSceneController: UIViewController {
     static let gameInterval: TimeInterval = 0.25
-    static let alienSpeed: Float = 1.0
+    var alienSpeed: Float = 1.0
+    var decisionsPerSecond: Int = 4
     static let xBaseSum = 6
     static let zBaseSum = 11
     static let timeBetweenCheckpoints: TimeInterval = 4
@@ -45,7 +46,6 @@ class GameSceneController: UIViewController {
     var aliens: [Alien] = []
     var deadAliens: [Alien] = []
     var reachedCheckpoints: [Checkpoint] = []
-    var countdown: Timer?
     var population: Int = 0
     
     var network: Neat!
@@ -81,9 +81,6 @@ class GameSceneController: UIViewController {
         self.sceneView.preferredFramesPerSecond = 60
         
         self.setupGame()
-        
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
-        self.sceneView.addGestureRecognizer(tapGesture)
         self.scene.physicsWorld.contactDelegate = self
         self.sceneView.delegate = self
     }
@@ -106,16 +103,14 @@ class GameSceneController: UIViewController {
     private func subscribeToActions() {
         manager.actionStream.sink { action in
             switch action {
+            case .finishGame:
+                self.finishGenerationTraining(startNewGame: false)
             case .returnCamera:
                 self.returnCameraToInitialPosition()
-            case .startEditing:
-                self.terrain.startEditing()
-            case .finishEditing:
-                self.terrain.finishEditing()
-            case .start(let population):
-                self.setupAliensPopulation(aliensPopulation: population)
+            case .start(let population, let decisions, let speed):
+                self.setupAliensPopulation(aliensPopulation: population, speed: speed, decisionsPerSecond: decisions)
             case .resetGeneration:
-                self.killAllAliens()
+                self.finishGenerationTraining(startNewGame: true)
             }
         }.store(in: &cancellableBag)
     }
@@ -126,7 +121,7 @@ class GameSceneController: UIViewController {
         self.sceneView.pointOfView = cameraNode
     }
     
-    func killAllAliens() {
+    func finishGenerationTraining(startNewGame: Bool) {
         self.isPlaying = false
         
         queue.async(qos: .userInteractive, flags: .barrier) {
@@ -135,7 +130,11 @@ class GameSceneController: UIViewController {
             // Do NEAT here.
             self.network.epoch()
             
-            self.king = self.network.getKing()
+            let newKing = self.network.getKing()
+            
+            if (self.king?.fitness ?? 0) < newKing.fitness {
+                self.king = newKing
+            }
             
             let id = self.king?.id ?? 0
             
@@ -143,16 +142,18 @@ class GameSceneController: UIViewController {
             print("King fitnes \(self.king?.fitness ?? -1)")
             
             //TODO: Destacar o alien com melhor fitness a todo momento
-            if id > 0 {
-                self.aliens[id-1].highlight()
-            }
+//            if id > 0 {
+//                self.aliens[id-1].highlight()
+//            }
 //            
             DispatchQueue.main.async {
                 for alien in self.aliens {
                     alien.reset()
                 }
-            
-                self.setupAliensPopulation(aliensPopulation: self.population)
+                
+                if startNewGame {
+                    self.setupAliensPopulation(aliensPopulation: self.population, speed: self.alienSpeed, decisionsPerSecond: self.decisionsPerSecond)
+                }
             }
         }
     }
@@ -166,8 +167,17 @@ class GameSceneController: UIViewController {
         
         if deadAliens.count == aliens.count {
             print("Everybody is dead! Restart population")
-            killAllAliens()
+            deadAliens = []
+            resetCheckpoints()
+            finishGenerationTraining(startNewGame: true)
         }
+    }
+    
+    func resetCheckpoints() {
+        for checkpoint in reachedCheckpoints {
+            checkpoint.opacity = 1.0
+        }
+        reachedCheckpoints = []
     }
     
     func alienReachCheckpoint(_ checkpoint: Checkpoint) {
@@ -176,43 +186,9 @@ class GameSceneController: UIViewController {
         }
         
         self.reachedCheckpoints.append(checkpoint)
-        resetCountingDown()
-        startCountingDown()
+        checkpoint.opacity = 0.3
         print("Alien chegou em novo checkpoint")
         print("Resetar count down")
-    }
-    
-    func resetCountingDown() {
-        DispatchQueue.main.async {
-            self.countdown?.invalidate()
-        }
-    }
-    
-    func startCountingDown() {
-        DispatchQueue.main.async {
-            print("Começou contagem regressiva")
-            self.countdown = Timer.scheduledTimer(withTimeInterval: GameSceneController.timeBetweenCheckpoints, repeats: false, block: { timer in
-                print("Acabou o tempo")
-                self.killAllAliens()
-            })
-        }
-    }
-    
-    @objc func handleTap(_ gestureRecognize: UIGestureRecognizer) {
-        // check what nodes are tapped
-        let p = gestureRecognize.location(in: sceneView)
-        let hitResults = sceneView.hitTest(p, options: [:])
-        // check that we clicked on at least one object
-        if hitResults.count > 0 {
-            // retrieved the first clicked object
-            let result: SCNHitTestResult = hitResults[0]
-            let name = result.node.parent?.name
-            
-            if (name != nil && name!.contains("editable")) {
-                terrain.tapOnTerrain(node: result.node)
-                return
-            }
-        }
     }
 }
 
@@ -224,7 +200,7 @@ extension GameSceneController {
         
         for i in 1...positions.count {
             let position = positions[i-1]
-            let newCheckpoint = Checkpoint(id: i, position: position)
+            let newCheckpoint = Checkpoint(id: i, position: position, points: Double(10))
             checkpoints.append(newCheckpoint)
             self.scene.rootNode.addChildNode(newCheckpoint)
         }
@@ -250,7 +226,7 @@ extension GameSceneController {
         self.scene.background.contents = skyboxImages
     }
     
-    func setupAliensPopulation(aliensPopulation: Int) {
+    func setupAliensPopulation(aliensPopulation: Int, speed: Float, decisionsPerSecond: Int) {
         guard let trophy = self.scene.rootNode.childNode(withName: "trophy", recursively: false) else {
             print("Cannot find trophy")
             return
@@ -259,15 +235,18 @@ extension GameSceneController {
         aliens = []
         deadAliens = []
         self.population = aliensPopulation
+        self.alienSpeed = speed
+        self.decisionsPerSecond = decisionsPerSecond
         manager.newGeneration()
-        reachedCheckpoints = []
-        resetCountingDown()
+        resetCheckpoints()
         
+        SCNTransaction.begin()
         for i in 1...population{
-            let alien = Alien(.purple, walls: self.map, target: trophy, id: i, speed: GameSceneController.alienSpeed)!
+            let alien = Alien(.purple, walls: self.map, target: trophy, id: i, speed: speed)!
             sceneView.scene?.rootNode.addChildNode(alien)
             aliens.append(alien)
         }
+        SCNTransaction.commit()
         
         self.network = Neat(inputs: Alien.inputCount, outputs: Alien.outputCount, population: aliens.count, confFile: nil, multithread: false)
         
@@ -276,7 +255,6 @@ extension GameSceneController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.isPlaying = true
             self.gameLoop()
-            self.startCountingDown()
         }
     }
     
@@ -290,10 +268,6 @@ extension GameSceneController {
             
             self.map[x,z] = true
         }
-        
-        // Creating path matrix
-        print(map[5.xToGameMatrix(), (-11).zToGameMatrix()])
-        print(map[5.xToGameMatrix(), (-5).zToGameMatrix()])
         
         self.manager.finishLoadingMap()
     }
@@ -320,7 +294,7 @@ extension GameSceneController: SCNPhysicsContactDelegate {
         
         if contact.nodeA is Checkpoint || contact.nodeB is Checkpoint {
             let checkpoint = contact.nodeA is Checkpoint ? contact.nodeA as! Checkpoint : contact.nodeB as! Checkpoint
-            let points = Double(checkpoint.id * 10)
+            let points = Double(checkpoint.points)
             alien.hitCheckpoint(points: points, checkpointId: checkpoint.id)
             alienReachCheckpoint(checkpoint)
             return
@@ -350,7 +324,16 @@ extension GameSceneController: SCNPhysicsContactDelegate {
 
 //MARK: Game Loop
 extension GameSceneController: SCNSceneRendererDelegate {
-    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {}
+    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+        for alien in self.aliens {
+            alien.updateDirections()
+        }
+    }
+    
+    private func gameInterval() -> TimeInterval {
+        let interval = 1.0/Double(self.decisionsPerSecond)
+        return interval
+    }
     
     func gameLoop() {
         if !isPlaying {
@@ -380,7 +363,7 @@ extension GameSceneController: SCNSceneRendererDelegate {
         }
         
         // Set a timer for the next game loop
-        _ = DispatchQueue.main.asyncAfter(deadline: .now() + GameSceneController.gameInterval) {
+        _ = DispatchQueue.main.asyncAfter(deadline: .now() + gameInterval()) {
             self.gameLoop()
         }
     }

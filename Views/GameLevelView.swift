@@ -10,6 +10,7 @@ import SceneKit
 
 struct GameLevelView: View {
     @ObservedObject var manager: Manager
+    @State var isTraining = false
     
     var body: some View {
         ZStack {
@@ -21,73 +22,29 @@ struct GameLevelView: View {
             }
             
             VStack {
-                Text("Generation: \(manager.currentGeneration)")
-                
-                if !manager.hasStarted {
-                    startButton
-                }
-                
-                if manager.hasStarted {
-                    killAllAliensButton
+                Spacer()
+                ControlPanel(
+                    isTraining: $isTraining,
+                    hasStartedGeneration: manager.hasStarted,
+                    currentGeneration: manager.currentGeneration,
+                    isCameraFixed: manager.isCameraFixed,
+                    onPressStartGame: { (populationSize, decisionsPerSecond, alienSpeed) in
+                        manager.startGame(population: populationSize, decisions: decisionsPerSecond, speed: alienSpeed)
+                    }, onPressResetGeneration: {
+                        manager.resetCurrentGeneration()
+                    }, onPressCamere: {
+                        manager.returnCameraToInitialPosition()
+                    }, onPressStopTraining: {
+                        manager.finishGame()
+                    }
+                )
+                .background {
+                    Rectangle()
+                        .foregroundStyle(.bar)
                 }
             }
-            .padding(.leading, 56)
-            .padding(.top, 24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             
-            HStack(spacing: 24) {
-                editTerrainButton
-                fixCameraButton
-                returnCameraPositionButton
-            }
-            .padding(.trailing, 56)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
-    }
-    
-    var fixCameraButton: some View {
-        Image(systemName: manager.isCameraFixed ? "mappin.slash.circle" :  "mappin.circle")
-            .font(.largeTitle)
-            .foregroundColor(.white)
-            .onTapGesture {
-                manager.isCameraFixed.toggle()
-            }
-    }
-    
-    var returnCameraPositionButton: some View {
-        Image(systemName: "camera.circle")
-            .font(.largeTitle)
-            .foregroundColor(.white)
-            .onTapGesture {
-                manager.returnCameraToInitialPosition()
-            }
-    }
-    
-    var editTerrainButton: some View {
-        Image(systemName: manager.isEditingTerrain ? "square.and.pencil.circle.fill" : "square.and.pencil.circle")
-            .font(.largeTitle)
-            .foregroundColor(.white)
-            .onTapGesture {
-                manager.editTerrain()
-            }
-    }
-    
-    var startButton: some View {
-        Image(systemName: "play.circle")
-            .font(.largeTitle)
-            .foregroundColor(.green)
-            .onTapGesture {
-                manager.startGame()
-            }
-    }
-    
-    var killAllAliensButton: some View {
-        Image(systemName: "xmark.circle.fill")
-            .font(.largeTitle)
-            .foregroundColor(.red)
-            .onTapGesture {
-                manager.resetCurrentGeneration()
-            }
     }
 }
 

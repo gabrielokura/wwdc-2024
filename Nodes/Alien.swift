@@ -20,6 +20,7 @@ class Alien: SCNNode, Identifiable {
     private var health: Int!
     
     var isDead = false
+    var canMove = false
     
     var fitnessLevel: Double = 0
     static let inputCount: Int = 5
@@ -33,8 +34,10 @@ class Alien: SCNNode, Identifiable {
     private var checkpoints: [Int] = []
     private var sensors: [SCNNode] = []
     
-    private let radius: Float = 0.6
+    private let radius: Float = 0.3
     private var firstDistance: Double = 0
+    
+    var directions: [Double]
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("Not implemented")
@@ -54,6 +57,7 @@ class Alien: SCNNode, Identifiable {
         self.type = type
         self.direction = .bottom
         self.movementSpeed = speed
+        self.directions = [0, 0, 0, 0]
         
         super.init()
         
@@ -81,6 +85,7 @@ class Alien: SCNNode, Identifiable {
         self.name = "alien"
         
         self.firstDistance = getDistanceFromTarget()
+        self.scheduleMovement(seconds: Double(id) * 0.05)
     }
     
     private func setupSensorsNodes() -> [SCNNode]{
@@ -142,11 +147,17 @@ class Alien: SCNNode, Identifiable {
         self.physicsBody?.clearAllForces()
         self.opacity = 0.2
         self.isDead = true
+        
+        //TODO ANIMAR QUEDA DA NAVE
+    }
+    
+    func updateDirections() {
+        self.directions = getDirectionInput()
     }
     
     // Directions must have 4 values
     func move(directions: [Double]) {
-        if isDead {
+        if isDead || !canMove{
             return
         }
         
@@ -186,13 +197,19 @@ class Alien: SCNNode, Identifiable {
         self.fitnessLevel += fitness
     }
     
+    func scheduleMovement(seconds: TimeInterval) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+            self.canMove = true
+        }
+    }
+    
     func generateInputDataForNeuralNetwork() -> [Double]{
-        let direction = getDirectionInput()
+//        let direction = getDirectionInput()
         let normalizedDistance = getDistanceFromTarget()/firstDistance
 //        let angle = Double(getAngleFromTarget(target: self.target.presentation.position))
         
         var result: [Double] = []
-        result.append(contentsOf: direction)
+        result.append(contentsOf: directions)
 //        result.append(angle)
         result.append(normalizedDistance)
         
@@ -231,7 +248,7 @@ extension Alien {
         
         let left: Double = Double(getDistanceFromLeftWall(x: position.x, z: position.z))
         
-        let result = [up*2, right*2, down*2, left*2]
+        let result = [up, right, down, left]
         
         for i in 0..<result.count {
             self.sensors[i].opacity = result[i] == 0 ? 0 : 1 - result[i]
@@ -248,6 +265,7 @@ extension Alien {
         
         if hasWall {
             let right = Float(roundedX + 1)
+            print("Right \(abs(right)) - \(abs(x)))\(abs(right - x) - self.radius)")
             return abs(right - x) - self.radius
         }
 
@@ -262,7 +280,7 @@ extension Alien {
         
         if hasWall {
             let left = Float(roundedX - 1)
-//            print("Left \(abs(left - x) - self.radius)")
+            print("Left \(abs(left)) - \(abs(x)))\(abs(left - x) - self.radius)")
             return abs(left - x) - self.radius
         }
         
@@ -277,7 +295,7 @@ extension Alien {
         
         if hasWall {
             let top = Float(roundedZ - 1)
-//            print("Top \(abs(top - z) - self.radius)")
+            print("Top \(abs(top)) - \(abs(z)))\(abs(top - z) - self.radius)")
             return abs(top - z) - self.radius
         }
         
@@ -292,7 +310,7 @@ extension Alien {
         
         if hasWall {
             let bot = Float(roundedZ + 1)
-//            print("Bot \(abs(bot - z) - self.radius)")
+            print("Bot \(abs(bot)) - \(abs(z)))\(abs(bot - z) - self.radius)")
             return abs(bot - z) - self.radius
         }
         

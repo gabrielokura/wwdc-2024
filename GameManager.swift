@@ -9,7 +9,7 @@ import Foundation
 import Combine
 
 enum GameActions {
-    case start(Int), returnCamera, startEditing, finishEditing, resetGeneration
+    case start(Int, Int, Float), returnCamera, finishGame, resetGeneration
 }
 
 class Manager: ObservableObject {
@@ -25,29 +25,25 @@ class Manager: ObservableObject {
     var actionStream = PassthroughSubject<GameActions, Never>()
     
     func returnCameraToInitialPosition() {
-        isCameraFixed = true
         actionStream.send(.returnCamera)
     }
     
-    func editTerrain() {
-        isEditingTerrain.toggle()
-        actionStream.send(isEditingTerrain ? .startEditing : .finishEditing)
-    }
-    
-    func startGame() {
+    func startGame(population: Int, decisions: Int, speed: Float) {
         hasStarted = true
-        actionStream.send(.start(50))
+        actionStream.send(.start(population, decisions, speed))
     }
     
     func finishGame() {
         DispatchQueue.main.async {
             self.hasStarted = false
+            self.currentGeneration = 0
         }
+        
+        actionStream.send(.finishGame)
     }
     
     func resetCurrentGeneration() {
         actionStream.send(.resetGeneration)
-        hasStarted = false
     }
     
     func finishLoadingMap() {

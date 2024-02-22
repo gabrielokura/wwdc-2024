@@ -16,15 +16,22 @@ class Checkpoint: SCNNode {
         SCNVector3(2.5, 0.514, -8),
         SCNVector3(2.5, 0.514, -6),
         SCNVector3(2, 0.514, -3),
+        SCNVector3(-2, 0.514, -3),
+        SCNVector3(-3, 0.514, -2),
         SCNVector3(2, 0.514, -5),
         SCNVector3(0, 0.514, -3),
         SCNVector3(0, 0.514, 0),
+        SCNVector3(3, 0.514, -3),
+        SCNVector3(-3, 0.514, 0),
+        SCNVector3(0, 0.514, -1.5),
     ]
     
     let id: Int
+    let points: Double
     
-    init (id: Int, position: SCNVector3) {
+    init (id: Int, position: SCNVector3, points: Double) {
         self.id = id
+        self.points = points
         
         super.init()
         
