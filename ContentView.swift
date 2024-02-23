@@ -12,8 +12,18 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            GameLevelView(manager: manager)
+            switch manager.gameScene {
+            case .menu:
+                MenuView()
+            case .planetEarth:
+                GamePlanetEarthView()
+            case .planetIce:
+                GameLevelView()
+            case .planetMix:
+                GameLevelView()
+            }
         }
+        .environmentObject(manager)
     }
 }
 

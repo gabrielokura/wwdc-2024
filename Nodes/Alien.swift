@@ -37,8 +37,6 @@ class Alien: SCNNode, Identifiable {
     private let radius: Float = 0.3
     private var firstDistance: Double = 0
     
-    var directions: [Double]
-    
     required init?(coder aDecoder: NSCoder) {
         fatalError("Not implemented")
     }
@@ -57,7 +55,6 @@ class Alien: SCNNode, Identifiable {
         self.type = type
         self.direction = .bottom
         self.movementSpeed = speed
-        self.directions = [0, 0, 0, 0]
         
         super.init()
         
@@ -151,10 +148,6 @@ class Alien: SCNNode, Identifiable {
         //TODO ANIMAR QUEDA DA NAVE
     }
     
-    func updateDirections() {
-        self.directions = getDirectionInput()
-    }
-    
     // Directions must have 4 values
     func move(directions: [Double]) {
         if isDead || !canMove{
@@ -204,12 +197,12 @@ class Alien: SCNNode, Identifiable {
     }
     
     func generateInputDataForNeuralNetwork() -> [Double]{
-//        let direction = getDirectionInput()
+        let direction = getDirectionInput()
         let normalizedDistance = getDistanceFromTarget()/firstDistance
 //        let angle = Double(getAngleFromTarget(target: self.target.presentation.position))
         
         var result: [Double] = []
-        result.append(contentsOf: directions)
+        result.append(contentsOf: direction)
 //        result.append(angle)
         result.append(normalizedDistance)
         
@@ -251,7 +244,7 @@ extension Alien {
         let result = [up, right, down, left]
         
         for i in 0..<result.count {
-            self.sensors[i].opacity = result[i] == 0 ? 0 : 1 - result[i]
+            self.sensors[i].opacity = result[i] == 0 ? 0 : min(1 - result[i], 1)
         }
         
         return result

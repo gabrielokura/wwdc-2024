@@ -11,16 +11,16 @@ import Combine
 import SwiftUI
 import Neat
 
-struct GameLevelViewRepresentable: UIViewControllerRepresentable {
+struct GamePlanetEarthViewRepresentable: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> some UIViewController {
-        return GameSceneController()
+        return GamePlanetEarthController()
     }
     
     func updateUIViewController(_ uiViewController: UIViewControllerType, context: Context) {}
 }
 
 
-class GameSceneController: UIViewController {
+class GamePlanetEarthController: UIViewController {
     static let gameInterval: TimeInterval = 0.25
     var alienSpeed: Float = 1.0
     var decisionsPerSecond: Int = 4
@@ -54,6 +54,7 @@ class GameSceneController: UIViewController {
     var map:Matrix<Bool> = Matrix(rows: 20, columns: 20, defaultValue:false)
     
     let queue = DispatchQueue(label: "com.okura.smartAliens",attributes: .concurrent)
+    let aliensQueue = DispatchQueue(label: "com.okura.smartAliens.aliens",attributes: .concurrent)
     
     override func loadView() {
         super.loadView()
@@ -145,7 +146,7 @@ class GameSceneController: UIViewController {
 //            if id > 0 {
 //                self.aliens[id-1].highlight()
 //            }
-//            
+//
             DispatchQueue.main.async {
                 for alien in self.aliens {
                     alien.reset()
@@ -193,7 +194,7 @@ class GameSceneController: UIViewController {
 }
 
 //MARK: Setup functions
-extension GameSceneController {
+extension GamePlanetEarthController {
     func setupCheckpoints() -> [Checkpoint] {
         let positions = Checkpoint.positions
         var checkpoints: [Checkpoint] = []
@@ -274,7 +275,7 @@ extension GameSceneController {
 }
 
 //MARK: Physics delegate
-extension GameSceneController: SCNPhysicsContactDelegate {
+extension GamePlanetEarthController: SCNPhysicsContactDelegate {
     func physicsWorld(_ world: SCNPhysicsWorld, didBegin contact: SCNPhysicsContact) {
         
         let alien = contact.nodeA is Alien ? contact.nodeA as! Alien : contact.nodeB as! Alien
@@ -323,11 +324,9 @@ extension GameSceneController: SCNPhysicsContactDelegate {
 }
 
 //MARK: Game Loop
-extension GameSceneController: SCNSceneRendererDelegate {
+extension GamePlanetEarthController: SCNSceneRendererDelegate {
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
-        for alien in self.aliens {
-            alien.updateDirections()
-        }
+        
     }
     
     private func gameInterval() -> TimeInterval {
@@ -363,7 +362,7 @@ extension GameSceneController: SCNSceneRendererDelegate {
         }
         
         // Set a timer for the next game loop
-        _ = DispatchQueue.main.asyncAfter(deadline: .now() + gameInterval()) {
+        queue.asyncAfter(deadline: .now() + gameInterval()) {
             self.gameLoop()
         }
     }

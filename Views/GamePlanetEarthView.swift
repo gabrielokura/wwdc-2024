@@ -1,20 +1,19 @@
 //
-//  GameLevelView.swift
-//  TowerDefense
+//  SwiftUIView.swift
+//  
 //
-//  Created by Gabriel Motelevicz Okura on 25/07/23.
+//  Created by Gabriel Motelevicz Okura on 23/02/24.
 //
 
 import SwiftUI
-import SceneKit
 
-struct GameLevelView: View {
-    @ObservedObject var manager: Manager
+struct GamePlanetEarthView: View {
+    @EnvironmentObject var manager: Manager
     @State var isTraining = false
     
     var body: some View {
         ZStack {
-            GameLevelViewRepresentable()
+            GamePlanetEarthViewRepresentable()
                 .ignoresSafeArea()
             
             if manager.isLoadingMap {
@@ -48,8 +47,9 @@ struct GameLevelView: View {
     }
 }
 
-struct GameLevelView_Previews: PreviewProvider {
-    static var previews: some View {
-        GameLevelView(manager: Manager.instance)
+#Preview {
+    ZStack {
+        GamePlanetEarthView()
     }
+    .environmentObject(Manager.instance)
 }
