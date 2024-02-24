@@ -33,7 +33,11 @@ struct MenuView: View {
                         
                         Spacer()
                         
-                        planetIceImage
+                        Button {
+                            manager.onPressSecondPlanet()
+                        } label: {
+                            planetIceImage
+                        }
                         Spacer()
                     }
                     
@@ -114,7 +118,7 @@ struct MenuView: View {
                         .padding()
                         .background {
                             RoundedRectangle(cornerRadius: 16.0)
-                                .fill(manager.showNextButton ? Color(.gamePurple) : Color(.gray))
+                                .fill(manager.showNextButton && manager.canShowNextDialogue ? Color(.gamePurple) : Color(.gray))
                         }
                     }
             }
@@ -153,7 +157,7 @@ struct MenuView: View {
     
     var planetIceImage: some View {
         ZStack {
-            Image(.planetIce)
+            Image(manager.isSecondPlanetFilled ? .planetIceFilled : .planetIce)
                 .resizable()
                 .scaledToFit()
                 .opacity(manager.isSecondPlanetHidden ? 0.3 : 1)

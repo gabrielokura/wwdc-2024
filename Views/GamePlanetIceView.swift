@@ -1,13 +1,13 @@
 //
 //  SwiftUIView.swift
+//  
 //
-//
-//  Created by Gabriel Motelevicz Okura on 23/02/24.
+//  Created by Gabriel Motelevicz Okura on 24/02/24.
 //
 
 import SwiftUI
 
-struct GamePlanetEarthView: View {
+struct GamePlanetIceView: View {
     @EnvironmentObject var manager: Manager
     @State var isTraining = false
     
@@ -15,7 +15,7 @@ struct GamePlanetEarthView: View {
     
     var dialogues: [String] = [
         "Esse é o centro de treinamento dos Rubertianos. Sua missão é fazê-los aprenderem a não sair da área de terra, pois as naves não são preparadas para voarem por fora.",
-        "Na mesa de controle você pode editar algumas características antes de iniciar o treinamento. Fique a vontade para testá-las.\n\n Quando estiver pronto, aperte o play.",
+        "Na mesa de controle você pode editar algumas características antes de iniciar o treinamento. Fique a vontade para testá-las. Quando estiver pronto, aperte o play.",
         "Depois de testar todos os controles, selecione voltar para o menu para ir ao seu próximo treino.",
     ]
     
@@ -25,7 +25,7 @@ struct GamePlanetEarthView: View {
     
     var body: some View {
         ZStack {
-            GamePlanetEarthViewRepresentable()
+            GamePlanetIceViewRepresentable()
                 .ignoresSafeArea()
             
             if manager.isLoadingMap {
@@ -71,32 +71,30 @@ struct GamePlanetEarthView: View {
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             
-            if canShowControlPanel {
-                VStack {
-                    Spacer()
-                    ControlPanel(
-                        isTraining: $isTraining,
-                        hasStartedGeneration: manager.hasStarted,
-                        currentGeneration: manager.currentGeneration,
-                        isCameraFixed: manager.isCameraFixed,
-                        onPressStartGame: { (populationSize, decisionsPerSecond, alienSpeed) in
-                            manager.startGame(population: populationSize, decisions: decisionsPerSecond, speed: alienSpeed)
-                            
-                            withAnimation {
-                                interactions += 1
-                            }
-                        }, onPressResetGeneration: {
-                            manager.resetCurrentGeneration()
-                        }, onPressCamere: {
-                            manager.returnCameraToInitialPosition()
-                        }, onPressStopTraining: {
-                            manager.finishGame()
+            VStack {
+                Spacer()
+                ControlPanel(
+                    isTraining: $isTraining,
+                    hasStartedGeneration: manager.hasStarted,
+                    currentGeneration: manager.currentGeneration,
+                    isCameraFixed: manager.isCameraFixed,
+                    onPressStartGame: { (populationSize, decisionsPerSecond, alienSpeed) in
+                        manager.startGame(population: populationSize, decisions: decisionsPerSecond, speed: alienSpeed)
+                        
+                        withAnimation {
+                            interactions += 1
                         }
-                    )
-                    .background {
-                        Rectangle()
-                            .foregroundStyle(.bar)
+                    }, onPressResetGeneration: {
+                        manager.resetCurrentGeneration()
+                    }, onPressCamere: {
+                        manager.returnCameraToInitialPosition()
+                    }, onPressStopTraining: {
+                        manager.finishGame()
                     }
+                )
+                .background {
+                    Rectangle()
+                        .foregroundStyle(.bar)
                 }
             }
             
@@ -195,7 +193,7 @@ struct GamePlanetEarthView: View {
 
 #Preview {
     ZStack {
-        GamePlanetEarthView()
+        GamePlanetIceView()
     }
     .environmentObject(Manager.instance)
 }

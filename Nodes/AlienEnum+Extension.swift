@@ -9,26 +9,16 @@ import Foundation
 import SceneKit
 
 enum AlienType {
-    case purple
-    
-    var health: Int {
-        switch self {
-        case .purple:
-            return 100
-        }
-    }
+    case earth, ice, mix
     
     var initialPosition: SCNVector3 {
         switch self {
-        case .purple:
+        case .mix:
             return SCNVector3(5, 0.5, -10)
-        }
-    }
-    
-    var pathNodeName: String {
-        switch self {
-        case .purple:
-            return "purple_path"
+        case .earth:
+            return SCNVector3(0,0.5,-1)
+        case .ice:
+            return SCNVector3(0, 0.5, 0)
         }
     }
 }
@@ -119,10 +109,10 @@ enum MovementDirection {
 
 extension Int {
     func xToGameMatrix() -> Int {
-        return self + GameSceneController.xBaseSum
+        return self + GamePlanetMixController.xBaseSum
     }
     
     func zToGameMatrix() -> Int {
-        return self + GameSceneController.zBaseSum
+        return self + GamePlanetMixController.zBaseSum
     }
 }

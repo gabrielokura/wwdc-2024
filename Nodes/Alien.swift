@@ -16,9 +16,6 @@ class Alien: SCNNode, Identifiable {
     
     private var path: [SCNVector3] = []
     
-    private var fullHealth: Int!
-    private var health: Int!
-    
     var isDead = false
     var canMove = false
     
@@ -53,7 +50,19 @@ class Alien: SCNNode, Identifiable {
         self.walls = walls
         self.id = id
         self.type = type
-        self.direction = .bottom
+        
+        let random = Int.random(in: 1...4)
+        self.direction = switch random {
+        case 1:
+            MovementDirection.bottom
+        case 2:
+            MovementDirection.top
+        case 3:
+            MovementDirection.right
+        default:
+            MovementDirection.left
+        }
+        
         self.movementSpeed = speed
         
         super.init()
@@ -73,16 +82,20 @@ class Alien: SCNNode, Identifiable {
         self.sensors = setupSensorsNodes()
         
         self.setupPhysicsBody()
-        self.setupLifeNode()
-        
-        self.fullHealth = type.health
-        self.health = type.health
         
         self.position = type.initialPosition
         self.name = "alien"
         
         self.firstDistance = getDistanceFromTarget()
-        self.scheduleMovement(seconds: Double(id) * 0.05)
+        let seconds = switch self.type {
+        case .earth:
+            Double(id) * 0.5
+        case .ice:
+            Double(id) * 0.1
+        case .mix:
+            Double(id) * 0.01
+        }
+        self.scheduleMovement(seconds: seconds)
     }
     
     private func setupSensorsNodes() -> [SCNNode]{
@@ -91,13 +104,6 @@ class Alien: SCNNode, Identifiable {
         }
         
         return sensors
-    }
-    
-    private func setupLifeNode() {
-        self.lifeNode = self.childNode(withName: "life", recursively: false)!
-        self.lifeNode.pivot = SCNMatrix4MakeTranslation(-0.5, 0, 0)
-        self.lifeNode.position = SCNVector3(-0.5, 0, 0)
-        self.lifeNode.isHidden = true
     }
     
     private func setupPhysicsBody() {
@@ -114,17 +120,8 @@ class Alien: SCNNode, Identifiable {
         self.physicsBody?.collisionBitMask = CollisionCategory.bullet.rawValue | CollisionCategory.terrain.rawValue
     }
     
-    private func takeDamage(_ damage: Int) {
-        health = max(health - damage, 0)
-        
-        if health == 0 {
-            die()
-            return
-        }
-        
-        lifeNode.isHidden = false
-        let healthScale = Float(health)/Float(fullHealth)
-        lifeNode.scale.x = healthScale
+    private func takeDamage() {
+        die()
     }
     
     func hitCheckpoint(points: Double, checkpointId: Int) {
@@ -191,6 +188,7 @@ class Alien: SCNNode, Identifiable {
     }
     
     func scheduleMovement(seconds: TimeInterval) {
+        print("seconds: \(seconds)")
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
             self.canMove = true
         }
@@ -211,7 +209,7 @@ class Alien: SCNNode, Identifiable {
     
     func onCollision(withBullet: Bool) {
         if withBullet {
-            takeDamage(health)
+            takeDamage()
             return
         }
         
@@ -258,7 +256,7 @@ extension Alien {
         
         if hasWall {
             let right = Float(roundedX + 1)
-            print("Right \(abs(right)) - \(abs(x)))\(abs(right - x) - self.radius)")
+//            print("Right \(abs(right)) - \(abs(x)))\(abs(right - x) - self.radius)")
             return abs(right - x) - self.radius
         }
 
@@ -273,7 +271,7 @@ extension Alien {
         
         if hasWall {
             let left = Float(roundedX - 1)
-            print("Left \(abs(left)) - \(abs(x)))\(abs(left - x) - self.radius)")
+//            print("Left \(abs(left)) - \(abs(x)))\(abs(left - x) - self.radius)")
             return abs(left - x) - self.radius
         }
         
@@ -288,7 +286,7 @@ extension Alien {
         
         if hasWall {
             let top = Float(roundedZ - 1)
-            print("Top \(abs(top)) - \(abs(z)))\(abs(top - z) - self.radius)")
+//            print("Top \(abs(top)) - \(abs(z)))\(abs(top - z) - self.radius)")
             return abs(top - z) - self.radius
         }
         
@@ -303,7 +301,7 @@ extension Alien {
         
         if hasWall {
             let bot = Float(roundedZ + 1)
-            print("Bot \(abs(bot)) - \(abs(z)))\(abs(bot - z) - self.radius)")
+//            print("Bot \(abs(bot)) - \(abs(z)))\(abs(bot - z) - self.radius)")
             return abs(bot - z) - self.radius
         }
         

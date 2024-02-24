@@ -68,8 +68,8 @@ class GamePlanetMixController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        guard let scene = SCNScene(named: "GameLevel.scn") else {
-            print("Não achou GameLevel.scn")
+        guard let scene = SCNScene(named: "PlanetMixLevel.scn") else {
+            print("Não achou PlanetMixLevel.scn")
             return
         }
         
@@ -196,7 +196,7 @@ class GamePlanetMixController: UIViewController {
 //MARK: Setup functions
 extension GamePlanetMixController {
     func setupCheckpoints() -> [Checkpoint] {
-        let positions = Checkpoint.positions
+        let positions = Checkpoint.mixCheckpoints
         var checkpoints: [Checkpoint] = []
         
         for i in 1...positions.count {
@@ -243,7 +243,7 @@ extension GamePlanetMixController {
         
         SCNTransaction.begin()
         for i in 1...population{
-            let alien = Alien(.purple, walls: self.map, target: trophy, id: i, speed: speed)!
+            let alien = Alien(.mix, walls: self.map, target: trophy, id: i, speed: speed)!
             sceneView.scene?.rootNode.addChildNode(alien)
             aliens.append(alien)
         }
@@ -362,7 +362,7 @@ extension GamePlanetMixController: SCNSceneRendererDelegate {
         }
         
         // Set a timer for the next game loop
-        queue.asyncAfter(deadline: .now() + gameInterval()) {
+        _ = Timer.scheduledTimer(withTimeInterval: gameInterval(), repeats: false) { timer in
             self.gameLoop()
         }
     }

@@ -18,12 +18,13 @@ struct ContentView: View {
             case .planetEarth:
                 GamePlanetEarthView()
             case .planetIce:
-                GameLevelView()
+                GamePlanetIceView()
             case .planetMix:
-                GameLevelView()
+                GamePlanetMixView()
             }
         }
         .environmentObject(manager)
+        .preferredColorScheme(.light)
     }
 }
 

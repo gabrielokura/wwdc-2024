@@ -1,8 +1,8 @@
 //
-//  GameViewController.swift
-//  TowerDefense
+//  File.swift
+//  
 //
-//  Created by Gabriel Motelevicz Okura on 25/07/23.
+//  Created by Gabriel Motelevicz Okura on 24/02/24.
 //
 
 import UIKit
@@ -11,21 +11,22 @@ import Combine
 import SwiftUI
 import Neat
 
-struct GamePlanetEarthViewRepresentable: UIViewControllerRepresentable {
+struct GamePlanetIceViewRepresentable: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> some UIViewController {
-        return GamePlanetEarthController()
+        return GamePlanetIceController()
     }
     
     func updateUIViewController(_ uiViewController: UIViewControllerType, context: Context) {}
 }
 
 
-class GamePlanetEarthController: UIViewController {
+class GamePlanetIceController: UIViewController {
     static let gameInterval: TimeInterval = 0.25
     var alienSpeed: Float = 1.0
     var decisionsPerSecond: Int = 4
     static let xBaseSum = 6
     static let zBaseSum = 11
+    static let timeBetweenCheckpoints: TimeInterval = 4
     
     var sceneView: SCNView!
     
@@ -67,8 +68,8 @@ class GamePlanetEarthController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        guard let scene = SCNScene(named: "PlanetEarthLevel.scn") else {
-            print("Não achou PlanetEarthLevel.scn")
+        guard let scene = SCNScene(named: "PlanetIceLevel.scn") else {
+            print("Não achou PlanetIceLevel.scn")
             return
         }
         
@@ -91,6 +92,7 @@ class GamePlanetEarthController: UIViewController {
         self.subscribeToFixedCameraEvents()
         self.subscribeToActions()
         self.setupTerrain()
+        _ = self.setupCheckpoints()
     }
     
     private func subscribeToFixedCameraEvents() {
@@ -135,6 +137,16 @@ class GamePlanetEarthController: UIViewController {
                 self.king = newKing
             }
             
+            let id = self.king?.id ?? 0
+            
+            print("King id \(id)")
+            print("King fitnes \(self.king?.fitness ?? -1)")
+            
+            //TODO: Destacar o alien com melhor fitness a todo momento
+//            if id > 0 {
+//                self.aliens[id-1].highlight()
+//            }
+//
             DispatchQueue.main.async {
                 for alien in self.aliens {
                     alien.reset()
@@ -157,13 +169,46 @@ class GamePlanetEarthController: UIViewController {
         if deadAliens.count == aliens.count {
             print("Everybody is dead! Restart population")
             deadAliens = []
+            resetCheckpoints()
             finishGenerationTraining(startNewGame: true)
         }
+    }
+    
+    func resetCheckpoints() {
+        for checkpoint in reachedCheckpoints {
+            checkpoint.opacity = 1.0
+        }
+        reachedCheckpoints = []
+    }
+    
+    func alienReachCheckpoint(_ checkpoint: Checkpoint) {
+        if reachedCheckpoints.contains(checkpoint) {
+            return
+        }
+        
+        self.reachedCheckpoints.append(checkpoint)
+        checkpoint.opacity = 0.3
+        print("Alien chegou em novo checkpoint")
+        print("Resetar count down")
     }
 }
 
 //MARK: Setup functions
-extension GamePlanetEarthController {
+extension GamePlanetIceController {
+    func setupCheckpoints() -> [Checkpoint] {
+        let positions = Checkpoint.iceCheckpoints
+        var checkpoints: [Checkpoint] = []
+        
+        for i in 1...positions.count {
+            let position = positions[i-1]
+            let newCheckpoint = Checkpoint(id: i, position: position, points: Double(10))
+            checkpoints.append(newCheckpoint)
+            self.scene.rootNode.addChildNode(newCheckpoint)
+        }
+        
+        return checkpoints
+    }
+    
     private func setupCamera() {
         cameraNode = self.scene.rootNode.childNode(withName: "camera", recursively: false)
         
@@ -194,10 +239,11 @@ extension GamePlanetEarthController {
         self.alienSpeed = speed
         self.decisionsPerSecond = decisionsPerSecond
         manager.newGeneration()
+        resetCheckpoints()
         
         SCNTransaction.begin()
         for i in 1...population{
-            let alien = Alien(.earth, walls: self.map, target: trophy, id: i, speed: speed)!
+            let alien = Alien(.mix, walls: self.map, target: trophy, id: i, speed: speed)!
             sceneView.scene?.rootNode.addChildNode(alien)
             aliens.append(alien)
         }
@@ -229,7 +275,7 @@ extension GamePlanetEarthController {
 }
 
 //MARK: Physics delegate
-extension GamePlanetEarthController: SCNPhysicsContactDelegate {
+extension GamePlanetIceController: SCNPhysicsContactDelegate {
     func physicsWorld(_ world: SCNPhysicsWorld, didBegin contact: SCNPhysicsContact) {
         
         let alien = contact.nodeA is Alien ? contact.nodeA as! Alien : contact.nodeB as! Alien
@@ -247,15 +293,40 @@ extension GamePlanetEarthController: SCNPhysicsContactDelegate {
             return
         }
         
+        if contact.nodeA is Checkpoint || contact.nodeB is Checkpoint {
+            let checkpoint = contact.nodeA is Checkpoint ? contact.nodeA as! Checkpoint : contact.nodeB as! Checkpoint
+            let points = Double(checkpoint.points)
+            alien.hitCheckpoint(points: points, checkpointId: checkpoint.id)
+            alienReachCheckpoint(checkpoint)
+            return
+        }
+        
+        
         alien.onCollision(withBullet: false)
         alienDied(alien)
+    }
+    
+    func physicsWorld(_ world: SCNPhysicsWorld, didEnd contact: SCNPhysicsContact) {
+        if contact.nodeA is Tower || contact.nodeB is Tower {
+            let tower = contact.nodeA is Tower ? contact.nodeA as! Tower : contact.nodeB as! Tower
+            tower.unlockCannon()
+            return
+        }
+    }
+    
+    func physicsWorld(_ world: SCNPhysicsWorld, didUpdate contact: SCNPhysicsContact) {
+        if contact.nodeA is Tower || contact.nodeB is Tower {
+            let tower = contact.nodeA is Tower ? contact.nodeA as! Tower : contact.nodeB as! Tower
+            tower.aimCannon()
+            tower.startFire()
+        }
     }
 }
 
 //MARK: Game Loop
-extension GamePlanetEarthController: SCNSceneRendererDelegate {
+extension GamePlanetIceController: SCNSceneRendererDelegate {
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
-        //TODO: Fix standby when camera is paused
+        
     }
     
     private func gameInterval() -> TimeInterval {

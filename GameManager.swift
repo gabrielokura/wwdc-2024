@@ -23,7 +23,6 @@ class Manager: ObservableObject {
     @Published var gameScene: GameScene = .menu
     
     @Published var isCameraFixed: Bool = false
-    @Published var isEditingTerrain: Bool = false
     @Published var hasStarted: Bool = false
     @Published var isLoadingMap: Bool = true
     
@@ -69,10 +68,11 @@ class Manager: ObservableObject {
     //MARK: Menu functions and variables
     
     var dialogues: [String] = [
-        "Olá terráqueo, meu nome é Rubert. Sou um Rubertiano do planeta Ruberten.",
+        "Vamos ensinar os Rubertianos a chegarem na bolinha roxa. ",
         "Eu e meus companheiros estamos procurando um novo planeta para morar e precisamos da ajuda de um especialista em Neural Network para essa missão.",
         "Por isso contratamos você para ser nosso treinador. Sua missão é ensinar os Rubertianos a explorar novos planetas através de reinforcement learning (Eles só aprendem assim :/).",
-        "Selecione o primeiro planeta para que eu possa te mostrar como meus companheiros funcionam."
+        "Selecione o primeiro planeta para que eu possa te mostrar como meus companheiros funcionam.",
+        "Selecione o segundo planeta para começar o treinamento dos rubertianos."
     ]
     
     @Published var currentDialogue: String = ""
@@ -83,12 +83,40 @@ class Manager: ObservableObject {
     @Published var isFirstPlanetFilled = false
     @Published var isFirstPlanetHidden = true
     
+    @Published var isSecondPlanetFilled = false
     @Published var isSecondPlanetHidden = true
     
+    @Published var isThirdPlanetFilled = false
     @Published var isThirdPlanetHidden = true
     
+    var hasFinishedEarth = false
+    var hasFinishedIce = false
+    var hasFinishedMix = false
+    
+    var canShowNextDialogue: Bool {
+        get {
+            if !hasFinishedEarth && currentDialogueIndex == 3 {
+                return false
+            }
+            
+            if !hasFinishedIce && currentDialogueIndex == 4 {
+                return false
+            }
+            
+            return true
+        }
+    }
+    
     func onPressNext() {
+        if !showNextButton {
+            return
+        }
+        
         if currentDialogueIndex >= (dialogues.count - 1) {
+            return
+        }
+        
+        if !canShowNextDialogue {
             return
         }
         
@@ -104,6 +132,10 @@ class Manager: ObservableObject {
     }
     
     func onPressBack() {
+        if !showBackButton {
+            return
+        }
+        
         if currentDialogueIndex == 0 {
             return
         }
@@ -118,6 +150,10 @@ class Manager: ObservableObject {
     }
     
     func startDialogues() {
+        if currentDialogueIndex != 0 {
+            return
+        }
+        
         currentDialogue = dialogues.first!
     }
     
@@ -131,11 +167,51 @@ class Manager: ObservableObject {
         }
     }
     
+    
+}
+
+// MARK: Planet Earth FUNCTIONS
+
+extension Manager {
     func onPressFirstPlanet() {
         if isFirstPlanetHidden {
             return
         }
         
         gameScene = .planetEarth
+    }
+    
+    func backToMenuFromEarth() {
+        self.isFirstPlanetFilled = false
+        self.isSecondPlanetHidden = false
+        self.isSecondPlanetFilled = true
+        
+        self.hasFinishedEarth = true
+        self.currentDialogueIndex += 1
+        self.currentDialogue = dialogues[self.currentDialogueIndex]
+        
+        self.gameScene = .menu
+    }
+}
+
+// MARK: Planet Ice FUNCTIONS
+
+extension Manager {
+    func onPressSecondPlanet() {
+        if isSecondPlanetHidden {
+            return
+        }
+        
+        gameScene = .planetIce
+    }
+    
+    func backToMenuFromIce() {
+        self.isFirstPlanetFilled = false
+        self.isSecondPlanetHidden = false
+        self.isSecondPlanetFilled = true
+        
+        self.currentGeneration = 0
+        
+        self.gameScene = .menu
     }
 }

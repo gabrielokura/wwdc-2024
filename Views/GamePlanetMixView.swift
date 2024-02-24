@@ -8,7 +8,7 @@
 import SwiftUI
 import SceneKit
 
-struct GameLevelView: View {
+struct GamePlanetMixView: View {
     @EnvironmentObject var manager: Manager
     @State var isTraining = false
     
@@ -48,10 +48,10 @@ struct GameLevelView: View {
     }
 }
 
-struct GameLevelView_Previews: PreviewProvider {
+struct GamePlanetMixView_Previews: PreviewProvider {
     static var previews: some View {
         ZStack {
-            GameLevelView()
+            GamePlanetMixView()
         }
         .environmentObject(Manager.instance)
     }

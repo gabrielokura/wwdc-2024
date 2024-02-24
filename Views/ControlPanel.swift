@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ControlPanel: View {
     @Binding var isTraining: Bool
-    @State private var populationSize: Int = 40
+    @State private var populationSize: Int = 10
     @State private var decisionsPerSecond: Int = 4
     private let decisionsRange = 1...10
     
@@ -32,11 +32,11 @@ struct ControlPanel: View {
                     Text("Generation: \(currentGeneration)")
                     
                     HStack {
-                        if !hasStartedGeneration {
+                        if !isTraining {
                             startButton
                         }
                         
-                        if hasStartedGeneration {
+                        if isTraining {
                             killAllAliensButton
                         }
                         
@@ -92,9 +92,22 @@ struct ControlPanel: View {
             }
             
         } label: {
-            Image(systemName: "play.circle")
-                .font(.largeTitle)
-                .foregroundColor(.red)
+            HStack {
+                Group {
+                    Text("Start training")
+                    
+                    Image(systemName: "play")
+                }
+                .font(.system(size: 20))
+                .fontWeight(.regular)
+                .foregroundColor(.white)
+
+            }
+            .padding()
+            .background {
+                RoundedRectangle(cornerRadius: 14.0)
+                    .foregroundStyle(Color(.gamePurple))
+            }
         }
     }
     
@@ -102,9 +115,22 @@ struct ControlPanel: View {
         Button {
             onPressResetGeneration()
         } label: {
-            Image(systemName: "xmark.circle.fill")
-                .font(.largeTitle)
-                .foregroundColor(.red)
+            HStack {
+                Group {
+                    Text("Kill  aliens")
+                    
+                    Image(systemName: "xmark")
+                }
+                .font(.system(size: 20))
+                .fontWeight(.regular)
+                .foregroundColor(.black)
+
+            }
+            .padding()
+            .background {
+                RoundedRectangle(cornerRadius: 14.0)
+                    .stroke(.black, lineWidth: 1)
+            }
         }
     }
     
@@ -115,9 +141,22 @@ struct ControlPanel: View {
                 isTraining = false
             }
         } label: {
-            Image(systemName: "stop.circle")
-                .font(.largeTitle)
-                .foregroundColor(.red)
+            HStack {
+                Group {
+                    Text("Stop training")
+                    
+                    Image(systemName: "stop")
+                }
+                .font(.system(size: 20))
+                .fontWeight(.regular)
+                .foregroundColor(.white)
+
+            }
+            .padding()
+            .background {
+                RoundedRectangle(cornerRadius: 14.0)
+                    .foregroundStyle(Color(.red))
+            }
         }
     }
     
@@ -170,5 +209,5 @@ struct ControlPanel: View {
 }
 
 #Preview {
-    ControlPanel(isTraining: .constant(false) , hasStartedGeneration: false, currentGeneration: 1, isCameraFixed: false, onPressStartGame: {(_, __, ___) in }, onPressResetGeneration: {}, onPressCamere: {}, onPressStopTraining: {})
+    ControlPanel(isTraining: .constant(true) , hasStartedGeneration: false, currentGeneration: 1, isCameraFixed: false, onPressStartGame: {(_, __, ___) in }, onPressResetGeneration: {}, onPressCamere: {}, onPressStopTraining: {})
 }
