@@ -14,9 +14,10 @@ struct GamePlanetIceView: View {
     @State var interactions = 0
     
     var dialogues: [String] = [
-        "Esse é o centro de treinamento dos Rubertianos. Sua missão é fazê-los aprenderem a não sair da área de terra, pois as naves não são preparadas para voarem por fora.",
-        "Na mesa de controle você pode editar algumas características antes de iniciar o treinamento. Fique a vontade para testá-las. Quando estiver pronto, aperte o play.",
-        "Depois de testar todos os controles, selecione voltar para o menu para ir ao seu próximo treino.",
+        "Agora vamos ensinar os Rubertianos a chegarem no objetivo final, a bolinha roxa.",
+        "Perceba que o comportamento da primeira geração é completamente aleatório. A neural network é responsável por aprimorar seus movimentos a cada nova geração.",
+        "Ou seja, vamos utilizar o DNA do Rubertiano que mais coletar bolas amarelas para aprimorar as próximas gerações. Beleza?",
+        "Aperte play para começar o treinamento. O Rubertiano com melhor desempenho será o nosso representante no desafio final.",
     ]
     
     @State var currentDialogue: String = ""
@@ -73,6 +74,10 @@ struct GamePlanetIceView: View {
             
             VStack {
                 Spacer()
+                HStack {
+                    Spacer()
+                    returnCameraPositionButton
+                }
                 ControlPanel(
                     isTraining: $isTraining,
                     hasStartedGeneration: manager.hasStarted,
@@ -86,14 +91,12 @@ struct GamePlanetIceView: View {
                         }
                     }, onPressResetGeneration: {
                         manager.resetCurrentGeneration()
-                    }, onPressCamere: {
-                        manager.returnCameraToInitialPosition()
                     }, onPressStopTraining: {
                         manager.finishGame()
                     }
                 )
                 .background {
-                    Rectangle()
+                    RoundedRectangle(cornerRadius: 14.0)
                         .foregroundStyle(.bar)
                 }
             }
@@ -128,6 +131,29 @@ struct GamePlanetIceView: View {
         
         dialogueIndex -= 1
         currentDialogue = dialogues[dialogueIndex]
+    }
+    
+    var returnCameraPositionButton: some View {
+        Button {
+            manager.returnCameraToInitialPosition()
+        } label: {
+            HStack {
+                Group {
+                    Text("center camera")
+                    
+                    Image(systemName: "camera.viewfinder")
+                }
+                .font(.system(size: 20))
+                .fontWeight(.regular)
+                .foregroundColor(.white)
+                
+            }
+            .padding()
+            .background {
+                RoundedRectangle(cornerRadius: 14.0)
+                    .foregroundStyle(Color(.verdeFloresta))
+            }
+        }
     }
     
     var dialogueCard: some View {

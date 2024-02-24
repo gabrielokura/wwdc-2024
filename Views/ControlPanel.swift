@@ -1,6 +1,6 @@
 //
 //  SwiftUIView.swift
-//  
+//
 //
 //  Created by Gabriel Motelevicz Okura on 22/02/24.
 //
@@ -22,66 +22,46 @@ struct ControlPanel: View {
     
     let onPressStartGame: (Int, Int, Float) -> Void
     let onPressResetGeneration: () -> Void
-    let onPressCamere: () -> Void
     let onPressStopTraining: () -> Void
     
     var body: some View {
-        VStack {
-            HStack {
-                VStack(spacing: 16) {
+        HStack(alignment: .top) {
+            VStack {
+                
+                if isTraining {
                     Text("Generation: \(currentGeneration)")
-                    
-                    HStack {
-                        if !isTraining {
-                            startButton
-                        }
-                        
-                        if isTraining {
-                            killAllAliensButton
-                        }
-                        
-                        if isTraining {
-                            stopTrainingButton
-                        }
-                        
-                        returnCameraPositionButton
-                    }
-
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
                 }
                 
-                Spacer()
-                
-                VStack {
+                if isTraining {
                     HStack {
-                        Spacer()
-                        populationStepper
-                    }
-                    
-                    HStack {
-                        Spacer()
-                        decisionsPerSecondStepper
-                    }
-                    
-                    HStack {
-                        Spacer()
-                        alienSpeedSlider
+                        stopTrainingButton
+                        
+                        killAllAliensButton
                     }
                 }
-                .opacity(isTraining ? 0.75 : 1)
+                
+                
+                if !isTraining {
+                    startButton
+                }
             }
+            
+            Spacer()
+            
+            Group {
+                populationStepper
+                
+                decisionsPerSecondStepper
+                
+                alienSpeedSlider
+            }
+            .opacity(isTraining ? 0.75 : 1)
+            
         }
         .padding()
         
-    }
-    
-    var returnCameraPositionButton: some View {
-        Button {
-            onPressCamere()
-        } label: {
-            Image(systemName: "camera.circle")
-                .font(.largeTitle)
-                .foregroundColor(.black)
-        }
     }
     
     var startButton: some View {
@@ -90,18 +70,17 @@ struct ControlPanel: View {
             withAnimation {
                 isTraining = true
             }
-            
         } label: {
             HStack {
                 Group {
-                    Text("Start training")
+                    Text("start training")
                     
                     Image(systemName: "play")
                 }
                 .font(.system(size: 20))
                 .fontWeight(.regular)
                 .foregroundColor(.white)
-
+                
             }
             .padding()
             .background {
@@ -117,19 +96,20 @@ struct ControlPanel: View {
         } label: {
             HStack {
                 Group {
-                    Text("Kill  aliens")
+                    Text("kill  aliens")
                     
                     Image(systemName: "xmark")
                 }
                 .font(.system(size: 20))
                 .fontWeight(.regular)
-                .foregroundColor(.black)
-
+                .foregroundColor(.white)
+                
             }
             .padding()
             .background {
                 RoundedRectangle(cornerRadius: 14.0)
-                    .stroke(.black, lineWidth: 1)
+                //                    .stroke(.black, lineWidth: 1)
+                    .foregroundStyle(Color(.gamePurple))
             }
         }
     }
@@ -143,14 +123,14 @@ struct ControlPanel: View {
         } label: {
             HStack {
                 Group {
-                    Text("Stop training")
+                    Text("stop training")
                     
                     Image(systemName: "stop")
                 }
                 .font(.system(size: 20))
                 .fontWeight(.regular)
                 .foregroundColor(.white)
-
+                
             }
             .padding()
             .background {
@@ -161,12 +141,15 @@ struct ControlPanel: View {
     }
     
     var populationStepper: some View {
-        HStack {
-            Text("Population: \(populationSize)")
+        VStack (){
+            Text("Population\n")
+            Text("\(populationSize)")
+                .font(.largeTitle)
+                .fontWeight(.bold)
             
             if !isTraining {
                 Stepper {
-                    Text("Population: \(populationSize)")
+                    Text("population")
                 } onIncrement: {
                     if populationSize >= 100 {
                         return
@@ -186,8 +169,11 @@ struct ControlPanel: View {
     }
     
     var decisionsPerSecondStepper: some View {
-        HStack {
-            Text("Decisions per second: \(decisionsPerSecond)")
+        VStack() {
+            Text("Decisions per second\n")
+            Text("\(decisionsPerSecond)")
+                .font(.largeTitle)
+                .fontWeight(.bold)
             
             if !isTraining {
                 Stepper("", value: $decisionsPerSecond, in: decisionsRange)
@@ -197,8 +183,11 @@ struct ControlPanel: View {
     }
     
     var alienSpeedSlider: some View {
-        HStack {
-            Text(String(format: "Aliens speed: %.2f", alienSpeed))
+        VStack {
+            Text("Aliens speed\n")
+            Text(String(format: "%.2f", alienSpeed))
+                .font(.largeTitle)
+                .fontWeight(.bold)
             
             if !isTraining {
                 Slider(value: $alienSpeed, in: alienSpeedRange)
@@ -209,5 +198,5 @@ struct ControlPanel: View {
 }
 
 #Preview {
-    ControlPanel(isTraining: .constant(true) , hasStartedGeneration: false, currentGeneration: 1, isCameraFixed: false, onPressStartGame: {(_, __, ___) in }, onPressResetGeneration: {}, onPressCamere: {}, onPressStopTraining: {})
+    ControlPanel(isTraining: .constant(false) , hasStartedGeneration: false, currentGeneration: 1, isCameraFixed: false, onPressStartGame: {(_, __, ___) in }, onPressResetGeneration: {}, onPressStopTraining: {})
 }

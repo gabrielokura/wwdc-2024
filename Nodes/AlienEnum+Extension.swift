@@ -18,7 +18,7 @@ enum AlienType {
         case .earth:
             return SCNVector3(0,0.5,-1)
         case .ice:
-            return SCNVector3(0, 0.5, 0)
+            return SCNVector3(0, 0.5, -10)
         }
     }
 }

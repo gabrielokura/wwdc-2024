@@ -243,7 +243,7 @@ extension GamePlanetIceController {
         
         SCNTransaction.begin()
         for i in 1...population{
-            let alien = Alien(.mix, walls: self.map, target: trophy, id: i, speed: speed)!
+            let alien = Alien(.ice, walls: self.map, target: trophy, id: i, speed: speed)!
             sceneView.scene?.rootNode.addChildNode(alien)
             aliens.append(alien)
         }

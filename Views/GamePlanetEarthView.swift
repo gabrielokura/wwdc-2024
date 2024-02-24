@@ -74,6 +74,10 @@ struct GamePlanetEarthView: View {
             if canShowControlPanel {
                 VStack {
                     Spacer()
+                    HStack {
+                        Spacer()
+                        returnCameraPositionButton
+                    }
                     ControlPanel(
                         isTraining: $isTraining,
                         hasStartedGeneration: manager.hasStarted,
@@ -87,8 +91,6 @@ struct GamePlanetEarthView: View {
                             }
                         }, onPressResetGeneration: {
                             manager.resetCurrentGeneration()
-                        }, onPressCamere: {
-                            manager.returnCameraToInitialPosition()
                         }, onPressStopTraining: {
                             manager.finishGame()
                         }
@@ -130,6 +132,29 @@ struct GamePlanetEarthView: View {
         
         dialogueIndex -= 1
         currentDialogue = dialogues[dialogueIndex]
+    }
+    
+    var returnCameraPositionButton: some View {
+        Button {
+            manager.returnCameraToInitialPosition()
+        } label: {
+            HStack {
+                Group {
+                    Text("center camera")
+                    
+                    Image(systemName: "camera.viewfinder")
+                }
+                .font(.system(size: 20))
+                .fontWeight(.regular)
+                .foregroundColor(.white)
+                
+            }
+            .padding()
+            .background {
+                RoundedRectangle(cornerRadius: 14.0)
+                    .foregroundStyle(Color(.verdeFloresta))
+            }
+        }
     }
     
     var dialogueCard: some View {
