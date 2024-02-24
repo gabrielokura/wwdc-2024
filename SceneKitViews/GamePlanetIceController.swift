@@ -54,7 +54,7 @@ class GamePlanetIceController: UIViewController {
     var map:Matrix<Bool> = Matrix(rows: 20, columns: 20, defaultValue:false)
     
     let queue = DispatchQueue(label: "com.okura.smartAliens",attributes: .concurrent)
-    let aliensQueue = DispatchQueue(label: "com.okura.smartAliens.aliens",attributes: .concurrent)
+    var gameLoopTimer: Timer?
     
     override func loadView() {
         super.loadView()
@@ -124,6 +124,8 @@ class GamePlanetIceController: UIViewController {
     
     func finishGenerationTraining(startNewGame: Bool) {
         self.isPlaying = false
+        gameLoopTimer?.invalidate()
+        gameLoopTimer = nil
         
         queue.async(qos: .userInteractive, flags: .barrier) {
             self.network.nextGenomeStepTwo()
@@ -142,12 +144,11 @@ class GamePlanetIceController: UIViewController {
             print("King id \(id)")
             print("King fitnes \(self.king?.fitness ?? -1)")
             
-            //TODO: Destacar o alien com melhor fitness a todo momento
-//            if id > 0 {
-//                self.aliens[id-1].highlight()
-//            }
-//
+            let alien = self.aliens[id - 1]
+            
             DispatchQueue.main.async {
+                self.manager.setKing(newKing: newKing, checkpointsCounter: alien.checkpoints.count)
+                
                 for alien in self.aliens {
                     alien.reset()
                 }
@@ -188,8 +189,6 @@ class GamePlanetIceController: UIViewController {
         
         self.reachedCheckpoints.append(checkpoint)
         checkpoint.opacity = 0.3
-        print("Alien chegou em novo checkpoint")
-        print("Resetar count down")
     }
 }
 
@@ -232,6 +231,9 @@ extension GamePlanetIceController {
             print("Cannot find trophy")
             return
         }
+        
+        let moveAction = SCNAction.rotate(by: 0.4, around: cameraNode.position, duration: 1)
+        trophy.runAction(SCNAction.repeatForever(moveAction))
         
         aliens = []
         deadAliens = []
@@ -362,7 +364,7 @@ extension GamePlanetIceController: SCNSceneRendererDelegate {
         }
         
         // Set a timer for the next game loop
-        _ = Timer.scheduledTimer(withTimeInterval: gameInterval(), repeats: false) { timer in
+        gameLoopTimer = Timer.scheduledTimer(withTimeInterval: gameInterval(), repeats: false) { timer in
             self.gameLoop()
         }
     }

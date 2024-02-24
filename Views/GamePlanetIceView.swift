@@ -35,7 +35,7 @@ struct GamePlanetIceView: View {
             
             VStack {
                 HStack {
-                    Image(.levelInstructionsAlien)
+                    Image("level_instructions_alien")
                         .resizable()
                         .scaledToFit()
                         .frame(height: 200)
@@ -44,14 +44,16 @@ struct GamePlanetIceView: View {
                 }
                 
                 HStack {
-                    if interactions > 0 {
+                    Spacer()
+                    
+                    if manager.king != nil {
                         Button {
                             manager.finishGame()
-                            manager.backToMenuFromEarth()
+                            manager.backToMenuFromIce()
                         } label: {
                             HStack {
-                                Image(systemName: "arrow.left")
-                                Text("Go back to menu")
+                                Image(systemName: "arrow.right")
+                                Text("Go to final challenge")
                             }
                             .font(.body)
                             .fontWeight(.bold)
@@ -59,15 +61,12 @@ struct GamePlanetIceView: View {
                             .padding()
                             .background {
                                 RoundedRectangle(cornerRadius: 16.0)
-                                    .fill(Color(.gamePurple))
+                                    .fill(Color("gamePurple"))
                             }
                         }
                         
                     }
-                    
-                    Spacer()
                 }
-                
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -151,7 +150,7 @@ struct GamePlanetIceView: View {
             .padding()
             .background {
                 RoundedRectangle(cornerRadius: 14.0)
-                    .foregroundStyle(Color(.verdeFloresta))
+                    .foregroundStyle(Color("verdeFloresta"))
             }
         }
     }
@@ -181,7 +180,7 @@ struct GamePlanetIceView: View {
                     .padding()
                     .background {
                         RoundedRectangle(cornerRadius: 14.0)
-                            .fill(dialogueIndex > 0 ? Color(.gamePurple) : Color(.gray))
+                            .fill(dialogueIndex > 0 ? Color("gamePurple") : Color(.gray))
                     }
                 }
                 
@@ -198,7 +197,7 @@ struct GamePlanetIceView: View {
                     .padding()
                     .background {
                         RoundedRectangle(cornerRadius: 14.0)
-                            .fill(dialogueIndex < 2 ? Color(.gamePurple) : Color(.gray))
+                            .fill(dialogueIndex < 3 ? Color("gamePurple") : Color(.gray))
                     }
                 }
             }
@@ -206,11 +205,11 @@ struct GamePlanetIceView: View {
         .padding(20)
         .background {
             RoundedRectangle(cornerRadius: 14.0)
-                .foregroundStyle(Color(.brancoGeleira))
+                .foregroundStyle(Color("brancoGeleira"))
                 .padding(5)
                 .background {
                     RoundedRectangle(cornerRadius: 14.0)
-                        .foregroundStyle(Color(.azulNave))
+                        .foregroundStyle(Color("azulNave"))
                 }
         }
         .frame(width: 600, height: 200)

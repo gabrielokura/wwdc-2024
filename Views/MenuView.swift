@@ -13,7 +13,7 @@ struct MenuView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                Image(.starsBackground)
+                Image("stars_background")
                     .resizable()
                     .scaledToFit()
                 
@@ -67,7 +67,7 @@ struct MenuView: View {
             }
             .background {
                 Rectangle()
-                    .fill(Color(.background))
+                    .fill(Color("background"))
                     .ignoresSafeArea()
             }
             .onAppear {
@@ -101,7 +101,7 @@ struct MenuView: View {
                         .padding()
                         .background {
                             RoundedRectangle(cornerRadius: 16.0)
-                                .fill(manager.showBackButton ? Color(.gamePurple) : Color(.gray))
+                                .fill(manager.showBackButton ? Color("gamePurple") : Color(.gray))
                         }
                     }
                 
@@ -118,7 +118,7 @@ struct MenuView: View {
                         .padding()
                         .background {
                             RoundedRectangle(cornerRadius: 16.0)
-                                .fill(manager.showNextButton && manager.canShowNextDialogue ? Color(.gamePurple) : Color(.gray))
+                                .fill(manager.showNextButton && manager.canShowNextDialogue ? Color("gamePurple") : Color(.gray))
                         }
                     }
             }
@@ -132,14 +132,14 @@ struct MenuView: View {
     }
     
     var pathImage: some View {
-        Image(.planetsPath)
+        Image("planets_path")
             .resizable()
             .scaledToFit()
     }
     
     var planetEarthImage: some View {
         ZStack {
-            Image(manager.isFirstPlanetFilled ? .planetEarthFilled : .planetEarth)
+            Image(manager.isFirstPlanetFilled ? "planet_earth_filled" : "planet_earth")
                 .resizable()
                 .scaledToFit()
                 .opacity(manager.isFirstPlanetHidden ? 0.3 : 1)
@@ -157,7 +157,7 @@ struct MenuView: View {
     
     var planetIceImage: some View {
         ZStack {
-            Image(manager.isSecondPlanetFilled ? .planetIceFilled : .planetIce)
+            Image(manager.isSecondPlanetFilled ? "planet_ice_filled" : "planet_ice")
                 .resizable()
                 .scaledToFit()
                 .opacity(manager.isSecondPlanetHidden ? 0.3 : 1)
@@ -176,7 +176,7 @@ struct MenuView: View {
     
     var planetMixImage: some View {
         ZStack {
-            Image(.planetMix)
+            Image("planet_mix")
                 .resizable()
                 .scaledToFit()
                 .opacity(manager.isThirdPlanetHidden ? 0.3 : 1)
@@ -196,19 +196,19 @@ struct MenuView: View {
     var alienImage: some View {
         VStack {
             ZStack {
-                Image(.light)
+                Image("light")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 300, height: 350)
                     .padding(.bottom, -500)
                 
-                Image(.alien1)
+                Image("alien_1")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 300, height: 350)
             }
             
-            Image(.nimbus)
+            Image("nimbus")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 500, height: 300)

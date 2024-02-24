@@ -53,7 +53,8 @@ class GamePlanetEarthController: UIViewController {
     var map:Matrix<Bool> = Matrix(rows: 20, columns: 20, defaultValue:false)
     
     let queue = DispatchQueue(label: "com.okura.smartAliens",attributes: .concurrent)
-    let aliensQueue = DispatchQueue(label: "com.okura.smartAliens.aliens",attributes: .concurrent)
+    
+    var gameLoopTimer: Timer?
     
     override func loadView() {
         super.loadView()
@@ -122,6 +123,8 @@ class GamePlanetEarthController: UIViewController {
     
     func finishGenerationTraining(startNewGame: Bool) {
         self.isPlaying = false
+        gameLoopTimer?.invalidate()
+        gameLoopTimer = nil
         
         queue.async(qos: .userInteractive, flags: .barrier) {
             self.network.nextGenomeStepTwo()
@@ -291,7 +294,7 @@ extension GamePlanetEarthController: SCNSceneRendererDelegate {
         }
         
         // Set a timer for the next game loop
-        _ = Timer.scheduledTimer(withTimeInterval: gameInterval(), repeats: false) { timer in
+        gameLoopTimer = Timer.scheduledTimer(withTimeInterval: gameInterval(), repeats: false) { timer in
             self.gameLoop()
         }
     }

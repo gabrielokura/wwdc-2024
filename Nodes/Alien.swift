@@ -28,7 +28,7 @@ class Alien: SCNNode, Identifiable {
 
     let id: Int
     
-    private var checkpoints: [Int] = []
+    var checkpoints: [Int] = []
     private var sensors: [SCNNode] = []
     
     private let radius: Float = 0.3
@@ -50,18 +50,7 @@ class Alien: SCNNode, Identifiable {
         self.walls = walls
         self.id = id
         self.type = type
-        
-        let random = Int.random(in: 1...4)
-        self.direction = switch random {
-        case 1:
-            MovementDirection.bottom
-        case 2:
-            MovementDirection.top
-        case 3:
-            MovementDirection.right
-        default:
-            MovementDirection.left
-        }
+        self.direction = .bottom
         
         self.movementSpeed = speed
         
@@ -188,7 +177,6 @@ class Alien: SCNNode, Identifiable {
     }
     
     func scheduleMovement(seconds: TimeInterval) {
-        print("seconds: \(seconds)")
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
             self.canMove = true
         }

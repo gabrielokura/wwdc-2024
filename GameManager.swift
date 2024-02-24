@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import Neat
 
 enum GameActions {
     case start(Int, Int, Float), returnCamera, finishGame, resetGeneration
@@ -68,7 +69,6 @@ class Manager: ObservableObject {
     //MARK: Menu functions and variables
     
     var dialogues: [String] = [
-        "Vamos ensinar os Rubertianos a chegarem na bolinha roxa. ",
         "Eu e meus companheiros estamos procurando um novo planeta para morar e precisamos da ajuda de um especialista em Neural Network para essa missão.",
         "Por isso contratamos você para ser nosso treinador. Sua missão é ensinar os Rubertianos a explorar novos planetas através de reinforcement learning (Eles só aprendem assim :/).",
         "Selecione o primeiro planeta para que eu possa te mostrar como meus companheiros funcionam.",
@@ -92,6 +92,9 @@ class Manager: ObservableObject {
     var hasFinishedEarth = false
     var hasFinishedIce = false
     var hasFinishedMix = false
+    
+    @Published var king: NGenome? = nil
+    var checkpointsCounter: Int = 0
     
     var canShowNextDialogue: Bool {
         get {
@@ -187,8 +190,9 @@ extension Manager {
         self.isSecondPlanetFilled = true
         
         self.hasFinishedEarth = true
-        self.currentDialogueIndex += 1
+        self.currentDialogueIndex = 3
         self.currentDialogue = dialogues[self.currentDialogueIndex]
+        self.currentGeneration = 0
         
         self.gameScene = .menu
     }
@@ -212,6 +216,18 @@ extension Manager {
         
         self.currentGeneration = 0
         
-        self.gameScene = .menu
+        self.gameScene = .planetMix
+    }
+    
+    func setKing(newKing: NGenome, checkpointsCounter: Int) {
+        let kingFitness = self.king?.fitness ?? 0
+        
+        if newKing.fitness > kingFitness {
+            self.king = king
+            self.checkpointsCounter = checkpointsCounter
+            
+            print("New king with \(checkpointsCounter)")
+        }
+       
     }
 }

@@ -48,13 +48,13 @@ class GamePlanetMixController: UIViewController {
     var reachedCheckpoints: [Checkpoint] = []
     var population: Int = 0
     
-    var network: Neat!
+    var network: NNetwork!
     var king: NGenome? = nil
     
     var map:Matrix<Bool> = Matrix(rows: 20, columns: 20, defaultValue:false)
     
     let queue = DispatchQueue(label: "com.okura.smartAliens",attributes: .concurrent)
-    let aliensQueue = DispatchQueue(label: "com.okura.smartAliens.aliens",attributes: .concurrent)
+    var gameLoopTimer: Timer?
     
     override func loadView() {
         super.loadView()
@@ -124,39 +124,8 @@ class GamePlanetMixController: UIViewController {
     
     func finishGenerationTraining(startNewGame: Bool) {
         self.isPlaying = false
-        
-        queue.async(qos: .userInteractive, flags: .barrier) {
-            self.network.nextGenomeStepTwo()
-            
-            // Do NEAT here.
-            self.network.epoch()
-            
-            let newKing = self.network.getKing()
-            
-            if (self.king?.fitness ?? 0) < newKing.fitness {
-                self.king = newKing
-            }
-            
-            let id = self.king?.id ?? 0
-            
-            print("King id \(id)")
-            print("King fitnes \(self.king?.fitness ?? -1)")
-            
-            //TODO: Destacar o alien com melhor fitness a todo momento
-//            if id > 0 {
-//                self.aliens[id-1].highlight()
-//            }
-//            
-            DispatchQueue.main.async {
-                for alien in self.aliens {
-                    alien.reset()
-                }
-                
-                if startNewGame {
-                    self.setupAliensPopulation(aliensPopulation: self.population, speed: self.alienSpeed, decisionsPerSecond: self.decisionsPerSecond)
-                }
-            }
-        }
+        gameLoopTimer?.invalidate()
+        gameLoopTimer = nil
     }
     
     func alienDied(_ alien: Alien) {
@@ -188,8 +157,6 @@ class GamePlanetMixController: UIViewController {
         
         self.reachedCheckpoints.append(checkpoint)
         checkpoint.opacity = 0.3
-        print("Alien chegou em novo checkpoint")
-        print("Resetar count down")
     }
 }
 
@@ -233,6 +200,9 @@ extension GamePlanetMixController {
             return
         }
         
+        let moveAction = SCNAction.rotate(by: 0.4, around: cameraNode.position, duration: 1)
+        trophy.runAction(SCNAction.repeatForever(moveAction))
+        
         aliens = []
         deadAliens = []
         self.population = aliensPopulation
@@ -249,9 +219,7 @@ extension GamePlanetMixController {
         }
         SCNTransaction.commit()
         
-        self.network = Neat(inputs: Alien.inputCount, outputs: Alien.outputCount, population: aliens.count, confFile: nil, multithread: false)
-        
-        print("Population \(aliens.count)")
+        self.network = NNetwork(genome: self.manager.king!)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.isPlaying = true
@@ -326,7 +294,6 @@ extension GamePlanetMixController: SCNPhysicsContactDelegate {
 //MARK: Game Loop
 extension GamePlanetMixController: SCNSceneRendererDelegate {
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
-        
     }
     
     private func gameInterval() -> TimeInterval {
@@ -346,23 +313,14 @@ extension GamePlanetMixController: SCNSceneRendererDelegate {
         
         queue.async(qos: .userInteractive ,flags: .barrier) {
             for alien in self.aliens {
-                if alien.isDead {
-                    self.network.nextGenomeStepOne(alien.fitnessLevel)
-                    continue
-                }
-                
                 let inputData: [Double] = alien.generateInputDataForNeuralNetwork()
-                
-                let output = self.network.run(inputs: inputData, inputCount: Alien.inputCount, outputCount: Alien.outputCount)
-
+                let output = self.network.run(inputsIn: inputData, networkType: .SnapShot)
                 alien.move(directions: output)
-                
-                self.network.nextGenomeStepOne(alien.fitnessLevel)
             }
         }
         
         // Set a timer for the next game loop
-        _ = Timer.scheduledTimer(withTimeInterval: gameInterval(), repeats: false) { timer in
+        gameLoopTimer = Timer.scheduledTimer(withTimeInterval: gameInterval(), repeats: false) { timer in
             self.gameLoop()
         }
     }

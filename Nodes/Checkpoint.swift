@@ -14,11 +14,19 @@ class Checkpoint: SCNNode {
         SCNVector3(0, 0.514, -8),
         SCNVector3(0, 0.514, -6),
         SCNVector3(-3, 0.514, -6),
+        SCNVector3(-1.5, 0.514, -6),
+        SCNVector3(1.5, 0.514, -6),
         SCNVector3(3, 0.514, -6),
+        SCNVector3(-3, 0.514, -5),
+        SCNVector3(3, 0.514, -5),
         SCNVector3(-3, 0.514, -4),
         SCNVector3(3, 0.514, -4),
+        SCNVector3(-3, 0.514, -3),
+        SCNVector3(3, 0.514, -3),
         SCNVector3(-3, 0.514, -2),
         SCNVector3(3, 0.514, -2),
+        SCNVector3(-1.5, 0.514, -2),
+        SCNVector3(1.5, 0.514, -2),
     ]
     
     static let mixCheckpoints: [SCNVector3] = [

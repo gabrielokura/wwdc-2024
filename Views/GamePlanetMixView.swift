@@ -27,22 +27,20 @@ struct GamePlanetMixView: View {
                     Spacer()
                     returnCameraPositionButton
                 }
-                ControlPanel(
-                    isTraining: $isTraining,
-                    hasStartedGeneration: manager.hasStarted,
-                    currentGeneration: manager.currentGeneration,
-                    isCameraFixed: manager.isCameraFixed,
-                    onPressStartGame: { (populationSize, decisionsPerSecond, alienSpeed) in
-                        manager.startGame(population: populationSize, decisions: decisionsPerSecond, speed: alienSpeed)
-                    }, onPressResetGeneration: {
-                        manager.resetCurrentGeneration()
-                    }, onPressStopTraining: {
-                        manager.finishGame()
-                    }
-                )
+                Button {
+                    // colocar o king no cenário
+                    manager.startGame(population: 1, decisions: 4, speed: 1.0)
+                } label: {
+                    Text("Play")
+                        .font(.largeTitle)
+                        .bold()
+                        .foregroundStyle(.white)
+                }
+                .padding()
+                .padding(.horizontal)
                 .background {
-                    Rectangle()
-                        .foregroundStyle(.bar)
+                    RoundedRectangle(cornerRadius: 14.0)
+                        .foregroundStyle(Color("gamePurple"))
                 }
             }
             

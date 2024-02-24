@@ -85,7 +85,7 @@ struct ControlPanel: View {
             .padding()
             .background {
                 RoundedRectangle(cornerRadius: 14.0)
-                    .foregroundStyle(Color(.gamePurple))
+                    .foregroundStyle(Color("gamePurple"))
             }
         }
     }
@@ -109,7 +109,7 @@ struct ControlPanel: View {
             .background {
                 RoundedRectangle(cornerRadius: 14.0)
                 //                    .stroke(.black, lineWidth: 1)
-                    .foregroundStyle(Color(.gamePurple))
+                    .foregroundStyle(Color("gamePurple"))
             }
         }
     }

@@ -34,7 +34,7 @@ struct GamePlanetEarthView: View {
             
             VStack {
                 HStack {
-                    Image(.levelInstructionsAlien)
+                    Image("level_instructions_alien")
                         .resizable()
                         .scaledToFit()
                         .frame(height: 200)
@@ -58,7 +58,7 @@ struct GamePlanetEarthView: View {
                             .padding()
                             .background {
                                 RoundedRectangle(cornerRadius: 16.0)
-                                    .fill(Color(.gamePurple))
+                                    .fill(Color("gamePurple"))
                             }
                         }
                         
@@ -152,7 +152,7 @@ struct GamePlanetEarthView: View {
             .padding()
             .background {
                 RoundedRectangle(cornerRadius: 14.0)
-                    .foregroundStyle(Color(.verdeFloresta))
+                    .foregroundStyle(Color("verdeFloresta"))
             }
         }
     }
@@ -182,7 +182,7 @@ struct GamePlanetEarthView: View {
                     .padding()
                     .background {
                         RoundedRectangle(cornerRadius: 14.0)
-                            .fill(dialogueIndex > 0 ? Color(.gamePurple) : Color(.gray))
+                            .fill(dialogueIndex > 0 ? Color("gamePurple") : Color(.gray))
                     }
                 }
                 
@@ -199,7 +199,7 @@ struct GamePlanetEarthView: View {
                     .padding()
                     .background {
                         RoundedRectangle(cornerRadius: 14.0)
-                            .fill(dialogueIndex < 2 ? Color(.gamePurple) : Color(.gray))
+                            .fill(dialogueIndex < 2 ? Color("gamePurple") : Color(.gray))
                     }
                 }
             }
@@ -207,11 +207,11 @@ struct GamePlanetEarthView: View {
         .padding(20)
         .background {
             RoundedRectangle(cornerRadius: 14.0)
-                .foregroundStyle(Color(.brancoGeleira))
+                .foregroundStyle(Color("brancoGeleira"))
                 .padding(5)
                 .background {
                     RoundedRectangle(cornerRadius: 14.0)
-                        .foregroundStyle(Color(.azulNave))
+                        .foregroundStyle(Color("azulNave"))
                 }
         }
         .frame(width: 600, height: 200)
