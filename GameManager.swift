@@ -163,7 +163,7 @@ class Manager: ObservableObject {
         }
         
         if hasFinishedIce && hasFinishedMix && hasFinishedEarth {
-            self.currentDialogue = "Thanks for playing Smart Aliens"
+            self.currentDialogue = "It's been a good journey, huh?  I'll take it from here. \n\n Thanks for playing Smart Aliens. \n\nYou can explore all the planets, if you want."
         } else {
             currentDialogue = dialogues.first!
         }

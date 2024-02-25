@@ -186,7 +186,7 @@ struct MenuView: View {
                 .resizable()
                 .scaledToFit()
                 .opacity(manager.isSecondPlanetHidden ? 0.3 : 1)
-                
+                                
             if manager.isSecondPlanetHidden {
                 Image(systemName: "lock.fill")
                     .resizable()
