@@ -130,8 +130,7 @@ class Alien: SCNNode, Identifiable {
         self.physicsBody?.clearAllForces()
         self.opacity = 0.2
         self.isDead = true
-        
-        //TODO ANIMAR QUEDA DA NAVE
+        self.addFitness(-1)
     }
     
     // Directions must have 4 values
@@ -177,9 +176,9 @@ class Alien: SCNNode, Identifiable {
     }
     
     func scheduleMovement(seconds: TimeInterval) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+        _ = Timer.scheduledTimer(withTimeInterval: seconds, repeats: false, block: { timer in
             self.canMove = true
-        }
+        })
     }
     
     func generateInputDataForNeuralNetwork() -> [Double]{

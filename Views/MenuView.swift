@@ -41,16 +41,22 @@ struct MenuView: View {
                         Spacer()
                     }
                     
-                    planetMixImage
-                        .padding(.leading, 100)
+                    Button {
+                        manager.onPressThirdPlanet()
+                    } label: {
+                        planetMixImage
+                    }
+                    .padding(.leading, 100)
                     
                     Spacer()
                 }
+                .opacity(manager.hasStartedGame ? 1 : 0.1)
                 
                 HStack {
                     VStack {
                         Spacer()
                         alienImage
+                            .opacity(manager.hasStartedGame ? 1 : 0.1)
                     }
                     
                     Spacer()
@@ -60,7 +66,26 @@ struct MenuView: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        dialogueCard
+                        
+                        if manager.hasStartedGame {
+                            dialogueCard
+                        } else {
+                            Button {
+                                withAnimation {
+                                    manager.hasStartedGame = true
+                                }
+                                
+                            } label: {
+                                Text("Start game")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white)
+                                    .padding(26)
+                                    .background {
+                                        RoundedRectangle(cornerRadius: 14.0)
+                                    }
+                            }
+                        }
                     }
                 }
                 .padding()

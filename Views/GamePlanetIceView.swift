@@ -14,15 +14,18 @@ struct GamePlanetIceView: View {
     @State var interactions = 0
     
     var dialogues: [String] = [
-        "Agora vamos ensinar os Rubertianos a chegarem no objetivo final, a bolinha roxa.",
-        "Perceba que o comportamento da primeira geração é completamente aleatório. A neural network é responsável por aprimorar seus movimentos a cada nova geração.",
-        "Ou seja, vamos utilizar o DNA do Rubertiano que mais coletar bolas amarelas para aprimorar as próximas gerações. Beleza?",
-        "Aperte play para começar o treinamento. O Rubertiano com melhor desempenho será o nosso representante no desafio final.",
+        "Now we're going to use a genetic algorithm to teach them how to reach the final goal, the purple ball.",
+        "Note that the behavior of the first generation is completely random. The neural network is responsible for improving its movements with each new generation.",
+        "In other words, we'll use the DNA of the alien who collects the most yellow balls to improve the next generations. Okay?",
+        "Increase the population size and press 'start training' to begin.",
     ]
     
     @State var currentDialogue: String = ""
     @State var dialogueIndex = 0
     @State var canShowControlPanel = false
+    
+    @State var canGoToFinalChallenge = false
+    let finalDialogue: String = "Hmmm... I think we've had enough, let's move on to the last challenge."
     
     var body: some View {
         ZStack {
@@ -46,7 +49,7 @@ struct GamePlanetIceView: View {
                 HStack {
                     Spacer()
                     
-                    if manager.king != nil {
+                    if canGoToFinalChallenge {
                         Button {
                             manager.finishGame()
                             manager.backToMenuFromIce()
@@ -103,6 +106,14 @@ struct GamePlanetIceView: View {
         }
         .onAppear {
             startDialogues()
+        }
+        .onChange(of: manager.currentGeneration) { newValue in
+            if manager.currentGeneration > 6 && manager.checkpointsCounter > 0 {
+                withAnimation {
+                    canGoToFinalChallenge = true
+                    currentDialogue = finalDialogue
+                }
+            }
         }
     }
     
@@ -164,40 +175,42 @@ struct GamePlanetIceView: View {
             
             Spacer()
             
-            HStack {
-                Spacer()
-                
-                Button {
-                    previusDialogue()
-                } label: {
-                    HStack {
-                        Image(systemName: "arrow.left")
-                        Text("Back")
+            if !canGoToFinalChallenge {
+                HStack {
+                    Spacer()
+                    
+                    Button {
+                        previusDialogue()
+                    } label: {
+                        HStack {
+                            Image(systemName: "arrow.left")
+                            Text("Back")
+                        }
+                        .font(.body)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                        .padding()
+                        .background {
+                            RoundedRectangle(cornerRadius: 14.0)
+                                .fill(dialogueIndex > 0 ? Color("gamePurple") : Color(.gray))
+                        }
                     }
-                    .font(.body)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                    .padding()
-                    .background {
-                        RoundedRectangle(cornerRadius: 14.0)
-                            .fill(dialogueIndex > 0 ? Color("gamePurple") : Color(.gray))
-                    }
-                }
-                
-                Button {
-                    nextDialogue()
-                } label: {
-                    HStack {
-                        Image(systemName: "arrow.right")
-                        Text("Next")
-                    }
-                    .font(.body)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                    .padding()
-                    .background {
-                        RoundedRectangle(cornerRadius: 14.0)
-                            .fill(dialogueIndex < 3 ? Color("gamePurple") : Color(.gray))
+                    
+                    Button {
+                        nextDialogue()
+                    } label: {
+                        HStack {
+                            Image(systemName: "arrow.right")
+                            Text("Next")
+                        }
+                        .font(.body)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                        .padding()
+                        .background {
+                            RoundedRectangle(cornerRadius: 14.0)
+                                .fill(dialogueIndex < 3 ? Color("gamePurple") : Color(.gray))
+                        }
                     }
                 }
             }

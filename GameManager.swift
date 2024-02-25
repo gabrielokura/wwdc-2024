@@ -29,6 +29,8 @@ class Manager: ObservableObject {
     
     @Published var currentGeneration: Int = 0
     
+    @Published var hasStartedGame = false
+    
     var actionStream = PassthroughSubject<GameActions, Never>()
     
     func returnCameraToInitialPosition() {
@@ -69,10 +71,13 @@ class Manager: ObservableObject {
     //MARK: Menu functions and variables
     
     var dialogues: [String] = [
-        "Eu e meus companheiros estamos procurando um novo planeta para morar e precisamos da ajuda de um especialista em Neural Network para essa missão.",
-        "Por isso contratamos você para ser nosso treinador. Sua missão é ensinar os Rubertianos a explorar novos planetas através de reinforcement learning (Eles só aprendem assim :/).",
-        "Selecione o primeiro planeta para que eu possa te mostrar como meus companheiros funcionam.",
-        "Selecione o segundo planeta para começar o treinamento dos rubertianos."
+        "Hi. My name is Leo. My friends and I are looking for a new planet to live on and I need a coach to help us. \n\nPrecisely, a coach focused on neural network.",
+        "That's why we've hired you.\n\nYour mission is to teach us how to explore new planets through reinforcement learning.",
+        "Select the first planet so I can show you how my companions work.",
+    ]
+    
+    var iceDialogues: [String] = [
+        "Cool, right?\n\n Now select the second planet to start the real training."
     ]
     
     @Published var currentDialogue: String = ""
@@ -93,8 +98,8 @@ class Manager: ObservableObject {
     var hasFinishedIce = false
     var hasFinishedMix = false
     
-    @Published var king: NGenome? = nil
-    var checkpointsCounter: Int = 0
+    var king: NGenome? = nil
+    @Published var checkpointsCounter: Int = 0
     
     var canShowNextDialogue: Bool {
         get {
@@ -157,11 +162,16 @@ class Manager: ObservableObject {
             return
         }
         
-        currentDialogue = dialogues.first!
+        if hasFinishedIce && hasFinishedMix && hasFinishedEarth {
+            self.currentDialogue = "Thanks for playing Smart Aliens"
+        } else {
+            currentDialogue = dialogues.first!
+        }
+        
     }
     
     private func checkGameEvents() {
-        if currentDialogueIndex == 3 {
+        if currentDialogueIndex == 2 {
             // Evento: mostrar primeiro mapa selecionável
             withAnimation {
                 isFirstPlanetFilled = true
@@ -190,9 +200,13 @@ extension Manager {
         self.isSecondPlanetFilled = true
         
         self.hasFinishedEarth = true
-        self.currentDialogueIndex = 3
-        self.currentDialogue = dialogues[self.currentDialogueIndex]
+        self.dialogues = iceDialogues
+        self.currentDialogueIndex = 0
+        self.currentDialogue = iceDialogues.first!
         self.currentGeneration = 0
+        
+        showBackButton = false
+        showNextButton = false
         
         self.gameScene = .menu
     }
@@ -223,11 +237,43 @@ extension Manager {
         let kingFitness = self.king?.fitness ?? 0
         
         if newKing.fitness > kingFitness {
-            self.king = king
+            self.king = newKing
             self.checkpointsCounter = checkpointsCounter
             
             print("New king with \(checkpointsCounter)")
         }
        
+    }
+}
+
+
+// MARK: Planet Mix FUNCTIONS
+
+extension Manager {
+    func onPressThirdPlanet() {
+        if isSecondPlanetHidden {
+            return
+        }
+        
+        gameScene = .planetIce
+    }
+    
+    func backToMenuFromMix() {
+        self.isSecondPlanetFilled = false
+        self.isThirdPlanetHidden = false
+        
+        self.hasFinishedEarth = true
+        self.hasFinishedIce = true
+        self.hasFinishedMix = true
+        
+        self.dialogues = []
+        self.currentDialogueIndex = 0
+        self.currentDialogue = "Thanks for playing Smart Aliens"
+        self.currentGeneration = 0
+        
+        showBackButton = false
+        showNextButton = false
+        
+        self.gameScene = .menu
     }
 }

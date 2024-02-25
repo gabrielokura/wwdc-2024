@@ -96,13 +96,17 @@ class GamePlanetMixController: UIViewController {
     }
     
     private func subscribeToFixedCameraEvents() {
-        manager.$isCameraFixed.sink { value in
+        manager.$isCameraFixed.sink { [weak self] value in
+            guard let self = self else { return }
+            
             self.sceneView.allowsCameraControl = !value
         }.store(in: &cancellableBag)
     }
     
     private func subscribeToActions() {
-        manager.actionStream.sink { action in
+        manager.actionStream.sink { [weak self] action in
+            guard let self = self else { return }
+            
             switch action {
             case .finishGame:
                 self.finishGenerationTraining(startNewGame: false)
@@ -167,8 +171,9 @@ extension GamePlanetMixController {
         var checkpoints: [Checkpoint] = []
         
         for i in 1...positions.count {
+            let isLastCheckpoint = i == positions.count
             let position = positions[i-1]
-            let newCheckpoint = Checkpoint(id: i, position: position, points: Double(10))
+            let newCheckpoint = Checkpoint(id: i, position: position, points: Double(10), isTrophy: isLastCheckpoint)
             checkpoints.append(newCheckpoint)
             self.scene.rootNode.addChildNode(newCheckpoint)
         }
@@ -221,7 +226,9 @@ extension GamePlanetMixController {
         
         self.network = NNetwork(genome: self.manager.king!)
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            
             self.isPlaying = true
             self.gameLoop()
         }
@@ -311,7 +318,9 @@ extension GamePlanetMixController: SCNSceneRendererDelegate {
             return
         }
         
-        queue.async(qos: .userInteractive ,flags: .barrier) {
+        queue.async(qos: .userInteractive ,flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            
             for alien in self.aliens {
                 let inputData: [Double] = alien.generateInputDataForNeuralNetwork()
                 let output = self.network.run(inputsIn: inputData, networkType: .SnapShot)
@@ -320,7 +329,9 @@ extension GamePlanetMixController: SCNSceneRendererDelegate {
         }
         
         // Set a timer for the next game loop
-        gameLoopTimer = Timer.scheduledTimer(withTimeInterval: gameInterval(), repeats: false) { timer in
+        gameLoopTimer = Timer.scheduledTimer(withTimeInterval: gameInterval(), repeats: false) { [weak self] timer in
+            guard let self = self else { return }
+            
             self.gameLoop()
         }
     }

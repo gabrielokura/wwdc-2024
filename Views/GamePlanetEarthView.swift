@@ -14,9 +14,9 @@ struct GamePlanetEarthView: View {
     @State var interactions = 0
     
     var dialogues: [String] = [
-        "Esse é o centro de treinamento dos Rubertianos. Sua missão é fazê-los aprenderem a não sair da área de terra, pois as naves não são preparadas para voarem por fora.",
-        "Na mesa de controle você pode editar algumas características antes de iniciar o treinamento. Fique a vontade para testá-las.\n\n Quando estiver pronto, aperte o play.",
-        "Depois de testar todos os controles, selecione voltar para o menu para ir ao seu próximo treino.",
+        "This is our training center. Our ships are not prepared to fly outside the dirt.",
+        "On the control desk you can adjust the parameters before the training. Feel free to try them out.\n\n When you feel ready tap the 'start training' button.",
+        "Once you have tested all the controls, select `return to menu` to go to your next challenge.",
     ]
     
     @State var currentDialogue: String = ""

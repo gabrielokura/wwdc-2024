@@ -27,6 +27,7 @@ class Checkpoint: SCNNode {
         SCNVector3(3, 0.514, -2),
         SCNVector3(-1.5, 0.514, -2),
         SCNVector3(1.5, 0.514, -2),
+        SCNVector3(0, 0.514, -2)
     ]
     
     static let mixCheckpoints: [SCNVector3] = [
@@ -45,14 +46,17 @@ class Checkpoint: SCNNode {
         SCNVector3(3, 0.514, -3),
         SCNVector3(-3, 0.514, 0),
         SCNVector3(0, 0.514, -1.5),
+        SCNVector3(0, 0.514, 1.5)
     ]
     
     let id: Int
     let points: Double
+    let isTrophy: Bool
     
-    init (id: Int, position: SCNVector3, points: Double) {
+    init (id: Int, position: SCNVector3, points: Double, isTrophy: Bool) {
         self.id = id
         self.points = points
+        self.isTrophy = isTrophy
         
         super.init()
         
@@ -67,13 +71,13 @@ class Checkpoint: SCNNode {
         self.physicsBody?.contactTestBitMask = CollisionCategory.alien.rawValue
         self.physicsBody?.collisionBitMask = CollisionCategory.checkpoint.rawValue
         
-        self.name = "checkpoint\(id)"
+        self.name =  isTrophy ? "trophy" : "checkpoint\(id)"
         
         self.position = position
         
         // add texture
         let material = SCNMaterial()
-        material.diffuse.contents = UIColor.yellow
+        material.diffuse.contents = isTrophy ? UIColor.purple : UIColor.yellow
         self.geometry?.materials  = [material]
     }
     

@@ -11,7 +11,7 @@ struct ControlPanel: View {
     @Binding var isTraining: Bool
     @State private var populationSize: Int = 10
     @State private var decisionsPerSecond: Int = 4
-    private let decisionsRange = 1...10
+    private let decisionsRange = 1...8
     
     @State private var alienSpeed: Float = 1
     private let alienSpeedRange: ClosedRange<Float> = 0.5...1.5
@@ -151,7 +151,7 @@ struct ControlPanel: View {
                 Stepper {
                     Text("population")
                 } onIncrement: {
-                    if populationSize >= 100 {
+                    if populationSize >= 90 {
                         return
                     }
                     

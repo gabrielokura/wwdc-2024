@@ -62,6 +62,8 @@ class GamePlanetEarthController: UIViewController {
         let view = SCNView()
         self.view = view
         
+        print("Load view")
+        
         self.sceneView = view
     }
     
@@ -95,13 +97,18 @@ class GamePlanetEarthController: UIViewController {
     }
     
     private func subscribeToFixedCameraEvents() {
-        manager.$isCameraFixed.sink { value in
+        manager.$isCameraFixed.sink { [weak self] value in
+            guard let self = self else { return }
+            
             self.sceneView.allowsCameraControl = !value
         }.store(in: &cancellableBag)
     }
     
     private func subscribeToActions() {
-        manager.actionStream.sink { action in
+        print("Se inscreveu \(self.hashValue)")
+        manager.actionStream.sink { [weak self] action in
+            guard let self = self else { return }
+            
             switch action {
             case .finishGame:
                 self.finishGenerationTraining(startNewGame: false)
@@ -126,7 +133,9 @@ class GamePlanetEarthController: UIViewController {
         gameLoopTimer?.invalidate()
         gameLoopTimer = nil
         
-        queue.async(qos: .userInteractive, flags: .barrier) {
+        queue.async(qos: .userInteractive, flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            
             self.network.nextGenomeStepTwo()
             
             // Do NEAT here.
@@ -138,7 +147,11 @@ class GamePlanetEarthController: UIViewController {
                 self.king = newKing
             }
             
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else {
+                    return
+                }
+                
                 for alien in self.aliens {
                     alien.reset()
                 }
@@ -210,7 +223,9 @@ extension GamePlanetEarthController {
         
         print("Population \(aliens.count)")
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            
             self.isPlaying = true
             self.gameLoop()
         }
@@ -276,7 +291,9 @@ extension GamePlanetEarthController: SCNSceneRendererDelegate {
             return
         }
         
-        queue.async(qos: .userInteractive ,flags: .barrier) {
+        queue.async(qos: .userInteractive ,flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            
             for alien in self.aliens {
                 if alien.isDead {
                     self.network.nextGenomeStepOne(alien.fitnessLevel)
@@ -294,7 +311,8 @@ extension GamePlanetEarthController: SCNSceneRendererDelegate {
         }
         
         // Set a timer for the next game loop
-        gameLoopTimer = Timer.scheduledTimer(withTimeInterval: gameInterval(), repeats: false) { timer in
+        gameLoopTimer = Timer.scheduledTimer(withTimeInterval: gameInterval(), repeats: false) { [weak self] timer in
+            guard let self = self else { return }
             self.gameLoop()
         }
     }
