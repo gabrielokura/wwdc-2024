@@ -14,9 +14,9 @@ struct GamePlanetEarthView: View {
     @State var interactions = 0
     
     var dialogues: [String] = [
-        "This is our training center. Our ships are not prepared to fly outside the dirt.",
-        "On the control desk you can adjust the parameters before the training. Feel free to try them out.\n\n When you feel ready tap the 'start training' button.",
-        "Once you have tested all the controls, select `return to menu` to go to your next challenge.",
+        "This is our training center. You can explore it with your fingers. We'll train our ships to fly above the ground.",
+        "On the control desk you can adjust the parameters of the ships before the training. Feel free to try them out.",
+        "When you feel ready tap the 'start training' button.\n\n Once you have tested all the controls, select `return to menu` to go to your next challenge.",
     ]
     
     @State var currentDialogue: String = ""

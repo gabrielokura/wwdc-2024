@@ -251,11 +251,11 @@ extension Manager {
 
 extension Manager {
     func onPressThirdPlanet() {
-        if isSecondPlanetHidden {
+        if isThirdPlanetHidden {
             return
         }
         
-        gameScene = .planetIce
+        gameScene = .planetMix
     }
     
     func backToMenuFromMix() {

@@ -14,8 +14,8 @@ struct GamePlanetIceView: View {
     @State var interactions = 0
     
     var dialogues: [String] = [
-        "Now we're going to use a genetic algorithm to teach them how to reach the final goal, the purple ball.",
-        "Note that the behavior of the first generation is completely random. The neural network is responsible for improving its movements with each new generation.",
+        "Now we're going to use a genetic algorithm to teach them how to reach the yellow balls.",
+        "You'll notice that the behavior of the first generation is completely random. The neural network is responsible for improving its movements with each new generation.",
         "In other words, we'll use the DNA of the alien who collects the most yellow balls to improve the next generations. Okay?",
         "Increase the population size and press 'start training' to begin.",
     ]
@@ -108,7 +108,7 @@ struct GamePlanetIceView: View {
             startDialogues()
         }
         .onChange(of: manager.currentGeneration) { newValue in
-            if manager.currentGeneration > 6 && manager.checkpointsCounter > 0 {
+            if manager.currentGeneration > 2 && manager.checkpointsCounter > 0 {
                 withAnimation {
                     canGoToFinalChallenge = true
                     currentDialogue = finalDialogue

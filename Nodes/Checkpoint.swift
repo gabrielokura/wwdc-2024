@@ -77,7 +77,7 @@ class Checkpoint: SCNNode {
         
         // add texture
         let material = SCNMaterial()
-        material.diffuse.contents = isTrophy ? UIColor.purple : UIColor.yellow
+        material.diffuse.contents = UIColor.yellow
         self.geometry?.materials  = [material]
     }
     
