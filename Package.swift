@@ -8,13 +8,13 @@ import PackageDescription
 import AppleProductTypes
 
 let package = Package(
-    name: "SmartAliens",
+    name: "Aliens Network",
     platforms: [
         .iOS("16.0")
     ],
     products: [
         .iOSApplication(
-            name: "SmartAliens",
+            name: "Aliens Network",
             targets: ["AppModule"],
             bundleIdentifier: "com.gabrielokura.dev.SmartAliens",
             teamIdentifier: "2FT5KGG425",
@@ -24,12 +24,9 @@ let package = Package(
             accentColor: .presetColor(.indigo),
             supportedDeviceFamilies: [
                 .pad,
-                .phone
             ],
             supportedInterfaceOrientations: [
                 .portrait,
-                .landscapeRight,
-                .landscapeLeft,
                 .portraitUpsideDown(.when(deviceFamilies: [.pad]))
             ],
             appCategory: .games
