@@ -2,9 +2,9 @@
 
 Smart Aliens is a 3D game about Neural Network and Reinforcement learning. 
 
-https://www.youtube.com/watch?v=SrUT6E-Sw4A&t=8s
+[https://www.youtube.com/watch?v=SrUT6E-Sw4A&t=8s]
 
-App Store [download link](https://apps.apple.com/br/app/aliens-network/id6478606549?l=en-GB)
+[App Store](https://apps.apple.com/br/app/aliens-network/id6478606549?l=en-GB) download link.
 
 ### Tech Stack: SwiftUI, SceneKit, Combine, UIKit.
 
